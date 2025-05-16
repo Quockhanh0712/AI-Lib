@@ -1,0 +1,1 @@
+fastapi uvicorn[standard] sqlalchemy mysqlclient pydantic[email] python-dotenv passlib[bcrypt] python-jose[cryptography] itsdangerous
