@@ -1,0 +1,20 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # Dịch vụ Frontend (GUI-Cổng)
+  frontend:
+    build: ./frontend             # Docker sẽ tìm Dockerfile trong thư mục ./frontend
+    ports:
+      - "8082:80"                 # <--- CHỈNH SỬA Ở ĐÂY
+                                  # '8082' là cổng trên máy tính của bạn
+                                  # '80' là cổng bên trong container Nginx
+    volumes:
+      - ./frontend/public:/usr/share/nginx/html
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

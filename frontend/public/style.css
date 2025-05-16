@@ -1,0 +1,325 @@
+/* frontend/public/style.css */
+
+/* Thiết lập cơ bản cho toàn trang */
+body {
+    font-family: 'Poppins', sans-serif; /* Sử dụng font Poppins */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background: linear-gradient(to right, #6a11cb, #2575fc); /* Nền gradient đẹp mắt */
+    color: #f0f2f5; /* Màu chữ sáng cho nền tối */
+    overflow: hidden; /* Tránh scrollbar nếu không cần thiết */
+}
+
+/* Ẩn/hiện các màn hình */
+.screen {
+    display: none; /* Mặc định ẩn tất cả các màn hình */
+    width: 100%;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+}
+
+.screen:not(.hidden) {
+    display: flex; /* Chỉ hiển thị màn hình không có class 'hidden' */
+}
+
+/* Hiệu ứng mờ dần khi tải trang cho container */
+.container {
+    text-align: center;
+    padding: 40px;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    transform: translateY(-20px);
+    animation: fadeIn 1s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+h1 {
+    color: #0056b3;
+    margin-bottom: 25px;
+    font-size: 2.5em;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+h1 .fas { /* Style cho icon trong tiêu đề */
+    margin-right: 10px;
+    color: #2575fc; /* Màu icon */
+}
+
+p {
+    font-size: 1.2em;
+    line-height: 1.6;
+    margin-bottom: 40px;
+    color: #555;
+}
+
+.buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.buttons button {
+    display: block;
+    width: 100%;
+    padding: 18px 25px;
+    font-size: 1.3em;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+.buttons button .fas { /* Style cho icon trong nút */
+    margin-right: 10px;
+}
+
+.main-button {
+    background-color: #007bff;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+}
+
+.main-button:hover {
+    background-color: #0056b3;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 123, 255, 0.4);
+}
+
+.buttons button:not(.main-button) {
+    background-color: #6c757d;
+    color: white;
+    box-shadow: 0 4px 10px rgba(108, 117, 125, 0.2);
+}
+
+.buttons button:not(.main-button):hover {
+    background-color: #5a6268;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(108, 117, 125, 0.3);
+}
+
+/* Input Group */
+.input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.input-group input {
+    flex-grow: 1;
+    padding: 15px;
+    font-size: 1.2em;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.3s ease;
+    color: #333; /* Đảm bảo màu chữ trong input dễ đọc */
+}
+
+.input-group input:focus {
+    border-color: #007bff;
+}
+
+.input-group button {
+    padding: 15px 25px;
+    font-size: 1.2em;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.input-group button:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+/* Messages */
+.message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 1.1em;
+    min-height: 20px;
+}
+
+.message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Secondary Button (Quay lại) */
+.secondary-button {
+    background-color: #f0ad4e;
+    color: white;
+    box-shadow: 0 4px 10px rgba(240, 173, 78, 0.2);
+    width: auto;
+    padding: 10px 20px;
+    margin-top: 20px;
+    align-self: center; /* Căn giữa nếu là flex item */
+}
+
+.secondary-button:hover {
+    background-color: #ec971f;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(240, 173, 78, 0.3);
+}
+
+.secondary-button .fas {
+    margin-right: 8px;
+}
+
+/* Camera Feed Placeholder */
+.camera-feed-placeholder {
+    width: 100%;
+    max-width: 400px;
+    height: 250px;
+    background-color: #eee;
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #999;
+    font-size: 1.1em;
+    margin: 20px auto;
+}
+
+.camera-feed-placeholder .fas {
+    font-size: 5em; /* Kích thước icon lớn */
+    margin-bottom: 10px;
+}
+/* Thêm vào cuối file style.css */
+
+/* Style cho thẻ video webcam */
+#webcamFeed {
+    width: 100%;
+    max-width: 400px; /* Giới hạn chiều rộng của video */
+    height: auto; /* Chiều cao tự động để giữ tỷ lệ */
+    border: 2px solid #007bff;
+    border-radius: 10px;
+    margin: 20px auto;
+    display: block; /* Để căn giữa dễ dàng */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transform: scaleX(-1); /* Lật ngang video để trông như gương */
+}
+
+/* Style cho nút chụp ảnh */
+.camera-button {
+    background-color: #ffc107; /* Màu vàng */
+    color: #333;
+    box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
+    margin-bottom: 20px; /* Khoảng cách dưới nút */
+}
+
+.camera-button:hover {
+    background-color: #e0a800;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(255, 193, 7, 0.4);
+}
+/* Thêm vào cuối file style.css */
+
+/* Style cho danh sách thành viên */
+.member-list-placeholder {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+    text-align: left;
+    color: #333;
+    max-height: 250px; /* Giới hạn chiều cao để có scroll nếu dài */
+    overflow-y: auto; /* Cho phép scroll dọc */
+}
+
+.member-list-placeholder ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.member-list-placeholder li {
+    padding: 10px 0;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    font-size: 1.1em;
+}
+
+.member-list-placeholder li:last-child {
+    border-bottom: none;
+}
+
+.member-list-placeholder li .fas {
+    margin-right: 10px;
+    color: #007bff;
+}
+
+/* Style cho Form Đăng ký */
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+    font-size: 1.1em;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"] {
+    width: calc(100% - 30px); /* Kích thước phù hợp với padding */
+    padding: 15px;
+    font-size: 1.2em;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.3s ease;
+    color: #333;
+    background-color: #fff;
+}
+
+.form-group input:focus {
+    border-color: #007bff;
+}
+
+/* Điều chỉnh nút Submit cho form */
+#submitRegistration {
+    margin-top: 20px;
+    width: 100%; /* Nút submit rộng bằng form */
+}

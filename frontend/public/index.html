@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Thư viện - Cổng</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <section id="mainMenuScreen" class="screen">
+        <div class="container">
+            <h1>Chào mừng bạn đến với Thư viện!</h1>
+            <p>Chọn một tùy chọn để tiếp tục:</p>
+            <div class="buttons">
+                <button id="goToMemberIdInput" class="main-button">
+                    <i class="fas fa-user-check"></i> Điểm danh Khuôn mặt
+                </button>
+                <button id="goToViewMembersScreen"><i class="fas fa-users"></i> Xem Người đang ở Thư viện</button>
+                <button id="goToRegisterMemberScreen"><i class="fas fa-user-plus"></i> Gửi Yêu cầu Đăng ký Thành viên</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="memberIdInputScreen" class="screen hidden">
+        <div class="container">
+            <h1><i class="fas fa-id-card"></i> Nhập Mã Thành viên</h1>
+            <p>Vui lòng nhập mã thành viên để xác thực khuôn mặt.</p>
+
+            <div class="input-group">
+                <input type="text" id="memberIdInput" placeholder="Mã thành viên" maxlength="10">
+                <button id="submitMemberIdButton"><i class="fas fa-check"></i> Kiểm tra</button>
+            </div>
+
+            <div id="memberIdMessage" class="message"></div>
+            <button id="backToMainFromMemberId" class="secondary-button">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </button>
+        </div>
+    </section>
+
+    <section id="faceRecognitionScreen" class="screen hidden">
+        <div class="container">
+            <h1><i class="fas fa-camera"></i> Xác thực Khuôn mặt</h1>
+            <p>Đang xác thực cho thành viên có mã: <strong id="displayMemberId"></strong></p>
+
+            <video id="webcamFeed" autoplay playsinline></video>
+            <canvas id="canvasForCapture" style="display: none;"></canvas> 
+
+            <button id="captureImageButton" class="main-button camera-button">
+                <i class="fas fa-camera"></i> Chụp ảnh
+            </button>
+            
+            <button id="backToMemberIdInput" class="secondary-button">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </button>
+        </div>
+    </section>
+
+    <section id="viewMembersScreen" class="screen hidden">
+        <div class="container">
+            <h1><i class="fas fa-list"></i> Người đang ở Thư viện</h1>
+            <p>Danh sách các thành viên đang có mặt:</p>
+            
+            <div class="member-list-placeholder">
+                <ul>
+                    <li><i class="fas fa-circle-user"></i> Nguyễn Văn A (ID: 12345) - Đang đọc sách</li>
+                    <li><i class="fas fa-circle-user"></i> Trần Thị B (ID: 67890) - Học nhóm</li>
+                    <li><i class="fas fa-circle-user"></i> Lê Hoàng C (ID: 11223) - Đang tìm tài liệu</li>
+                    <li><i class="fas fa-circle-user"></i> ... (Dữ liệu sẽ được tải từ Backend)</li>
+                </ul>
+            </div>
+
+            <button id="backToMainFromViewMembers" class="secondary-button">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </button>
+        </div>
+    </section>
+
+    <section id="registerMemberScreen" class="screen hidden">
+        <div class="container">
+            <h1><i class="fas fa-user-plus"></i> Đăng ký Thành viên mới</h1>
+            <p>Vui lòng điền thông tin để gửi yêu cầu đăng ký.</p>
+
+            <div class="form-group">
+                <label for="regName">Họ và Tên:</label>
+                <input type="text" id="regName" placeholder="Ví dụ: Nguyễn Văn A">
+            </div>
+            <div class="form-group">
+                <label for="regEmail">Email:</label>
+                <input type="email" id="regEmail" placeholder="Ví dụ: email@example.com">
+            </div>
+            <div class="form-group">
+                <label for="regPhone">Số điện thoại:</label>
+                <input type="tel" id="regPhone" placeholder="Ví dụ: 0987xxxxxx">
+            </div>
+            <button id="submitRegistration" class="main-button">
+                <i class="fas fa-paper-plane"></i> Gửi Yêu cầu
+            </button>
+
+            <button id="backToMainFromRegister" class="secondary-button">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </button>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
