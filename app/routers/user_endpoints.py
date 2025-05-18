@@ -1,290 +1,231 @@
 # app/routers/user_endpoints.py
 from fastapi import APIRouter, Depends, HTTPException, status, Form, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import List, Optional, Annotated # Đã thêm Annotated và Optional
+from typing import List, Optional, Annotated
 from datetime import datetime
-import shutil # Để xử lý lưu file ảnh tạm
-import os # Để làm việc với đường dẫn file
+import shutil
+import os
 
+# Import các module cần thiết (giữ lại để code chạy)
 from db import database, models
 from schemas import user as user_schemas
 from schemas import attendance as attendance_schemas
 from schemas import request as request_schemas
 from crud import crud_user, crud_attendance, crud_request
 
-# Thư mục để lưu ảnh tạm thời cho các yêu cầu đăng ký (và có thể cả nhận diện nếu cần lưu tạm)
+# Thư mục để lưu ảnh tạm thời (giữ lại định nghĩa)
 TEMP_PHOTO_DIR = "temp_photos"
-os.makedirs(TEMP_PHOTO_DIR, exist_ok=True) # Tạo thư mục nếu chưa có
+os.makedirs(TEMP_PHOTO_DIR, exist_ok=True)
 
 router = APIRouter(
-    prefix="/machine", # Tiền tố chung cho các API của Machine UI
-    tags=["Machine UI Endpoints"] # Gom nhóm trong API docs
+    prefix="/machine",
+    tags=["Machine UI Endpoints"]
 )
 
-# --- UC1: Điểm danh Vào Thư viện ---
-@router.post("/attendance/check-in", response_model=attendance_schemas.AttendanceSession)
+# --- Endpoint Kiểm tra Mã Thành viên (Chỉ log) ---
+@router.get("/users/{member_code}/check",
+            summary="Kiểm tra sự tồn tại và trạng thái của User (Chỉ log)")
+def check_user_by_member_code_endpoint(member_code: str, db: Session = Depends(database.get_db)):
+    """
+    Endpoint này hiện tại chỉ log khi được gọi và trả về phản hồi tạm thời.
+    Logic kiểm tra database thực tế đã được bỏ qua.
+    """
+    print(f"LOG: Received GET request for /machine/users/{member_code}/check")
+    print(f"LOG: Checking member code: {member_code}")
+
+    # Tạm thời trả về phản hồi thành công để frontend nhận được 200 OK
+    # Trong thực tế, bạn sẽ gọi crud_user.get_user_by_member_code và xử lý phản hồi
+    return {"message": f"Received check request for member code {member_code}", "member_code": member_code}
+
+
+# --- UC1: Điểm danh Vào Thư viện (Chỉ log) ---
+@router.post("/attendance/check-in",
+            summary="Điểm danh Vào Thư viện (Chỉ log)")
 async def check_in_user_endpoint(
     member_code: str = Form(...),
-    # Sau này khi tích hợp AI, sẽ nhận file ảnh ở đây:
     # face_image: UploadFile = File(...), # Thêm tham số này khi tích hợp ảnh vào check-in
     db: Session = Depends(database.get_db)
 ):
     """
-    Endpoint cho người dùng điểm danh vào.
-    Yêu cầu Mã Thành viên. Sau này sẽ yêu cầu cả ảnh khuôn mặt để xác minh.
+    Endpoint này hiện tại chỉ log khi được gọi và trả về phản hồi tạm thời.
+    Logic điểm danh thực tế đã được bỏ qua.
     """
-    # 1. Kiểm tra Mã Thành viên
-    db_user = crud_user.get_user_by_member_code(db, member_code=member_code)
-    if not db_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Member code '{member_code}' not found.")
-    if db_user.status != "Approved":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is not approved or is inactive.")
+    print(f"LOG: Received POST request for /machine/attendance/check-in")
+    print(f"LOG: Check-in request for member code: {member_code}")
 
-    # 2. Kiểm tra xem user đã có phiên nào đang mở chưa
-    open_session = crud_attendance.get_open_attendance_session_by_user_id(db, user_id=db_user.id)
-    if open_session:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has already checked in and not checked out.")
+    # Tạm thời trả về phản hồi thành công
+    return {"message": f"Received check-in request for member code {member_code}", "member_code": member_code, "status": "received"}
 
-    # --- PHẦN XÁC MINH KHUÔN MẶT (SẼ THÊM LOGIC VÀO ĐÂY SAU) ---
-    # Khi tích hợp ảnh vào endpoint này, bạn sẽ đọc ảnh và gọi logic xác minh ở đây.
-    # Ví dụ:
-    # if 'face_image' in locals() and face_image: # Kiểm tra nếu tham số face_image có tồn tại
-    #     try:
-    #         contents = await face_image.read()
-    #         # from your_recognition_module import verify_face_with_stored_embedding
-    #         # if not await verify_face_with_stored_embedding(db, db_user.id, contents):
-    #         #      raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Face verification failed.")
-    #     except Exception as e:
-    #         print(f"Error during face verification in check-in: {e}")
-    #         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error during face verification.")
-    # --- KẾT THÚC PHẦN XÁC MINH KHUÔN MẶT ---
 
-    # 3. Tạo phiên điểm danh mới (chỉ khi xác minh thành công - hoặc bỏ qua xác minh tạm thời)
-    created_session = crud_attendance.create_attendance_session(db, user_id=db_user.id)
-
-    # Có thể trả về thêm thông tin user nếu Frontend cần
-    # return {"session": created_session, "user_full_name": db_user.full_name}
-    return created_session
-
-# --- UC2: Xem Danh sách Người dùng Đang ở trong Thư viện ---
-@router.get("/attendance/in-library", response_model=List[attendance_schemas.UserInLibrary])
+# --- UC2: Xem Danh sách Người dùng Đang ở trong Thư viện (Chỉ log) ---
+@router.get("/attendance/in-library",
+            summary="Xem Danh sách Người dùng Đang ở trong Thư viện (Chỉ log)")
 def get_users_in_library_endpoint(db: Session = Depends(database.get_db)):
-    """Lấy danh sách tất cả người dùng hiện đang có phiên điểm danh mở (chưa checkout)."""
-    sessions_with_users = crud_attendance.get_all_open_attendance_sessions_with_user_info(db)
+    """
+    Endpoint này hiện tại chỉ log khi được gọi và trả về danh sách rỗng tạm thời.
+    Logic truy vấn database thực tế đã được bỏ qua.
+    """
+    print(f"LOG: Received GET request for /machine/attendance/in-library")
+    print("LOG: Returning dummy empty list for users in library.")
 
-    # Chuyển đổi kết quả từ SQLAlchemy (tuple) sang Pydantic model
-    users_in_library = [
-        attendance_schemas.UserInLibrary(
-            session_id=session.id,
-            member_code=user.member_code,
-            full_name=user.full_name,
-            entry_time=session.entry_time
-        ) for session, user in sessions_with_users
-    ]
-    return users_in_library
+    # Tạm thời trả về danh sách rỗng để frontend không gặp lỗi khi parse JSON
+    return []
 
-# --- UC3: Điểm danh Ra khỏi Thư viện ---
-@router.post("/attendance/check-out", response_model=attendance_schemas.AttendanceSession)
+
+# --- UC3: Điểm danh Ra khỏi Thư viện (Chỉ log) ---
+@router.post("/attendance/check-out",
+            summary="Điểm danh Ra khỏi Thư viện (Chỉ log)")
 async def check_out_user_endpoint(
-    session_id_to_checkout: int = Form(...), # ID của phiên điểm danh muốn checkout
-    member_code_confirmation: str = Form(...), # Mã thành viên để xác nhận
+    session_id_to_checkout: int = Form(...),
+    member_code_confirmation: str = Form(...),
     db: Session = Depends(database.get_db)
 ):
-    """Endpoint cho người dùng điểm danh ra."""
-    # 1. Xác minh member_code_confirmation
-    db_user_confirming = crud_user.get_user_by_member_code(db, member_code=member_code_confirmation)
-    if not db_user_confirming:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Member code '{member_code_confirmation}' for confirmation not found.")
+    """
+    Endpoint này hiện tại chỉ log khi được gọi và trả về phản hồi tạm thời.
+    Logic checkout thực tế đã được bỏ qua.
+    """
+    print(f"LOG: Received POST request for /machine/attendance/check-out")
+    print(f"LOG: Check-out request for session ID: {session_id_to_checkout}, member code: {member_code_confirmation}")
 
-    # 2. Thực hiện checkout
-    # Hàm crud_attendance.checkout_attendance_session đã bao gồm kiểm tra user_id của phiên có khớp không
-    updated_session_or_error = crud_attendance.checkout_attendance_session(
-        db,
-        session_id=session_id_to_checkout,
-        user_id_from_code=db_user_confirming.id
-    )
+    # Tạm thời trả về phản hồi thành công
+    return {"message": "Received check-out request", "session_id": session_id_to_checkout, "status": "received"}
 
-    if updated_session_or_error is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attendance session not found or already checked out.")
-    if updated_session_or_error == "mismatch":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Member code does not match the user of the selected session.")
 
-    return updated_session_or_error # Đây là đối tượng AttendanceSession đã cập nhật
-
-# --- UC4: Gửi Yêu cầu Đăng ký Thành viên ---
-@router.post("/registration-requests/", response_model=request_schemas.RegistrationRequest, status_code=status.HTTP_201_CREATED)
+# --- UC4: Gửi Yêu cầu Đăng ký Thành viên (Chỉ log, ảnh tùy chọn) ---
+@router.post("/registration-requests/", status_code=status.HTTP_201_CREATED,
+            summary="Gửi Yêu cầu Đăng ký Thành viên (Chỉ log)")
 async def submit_registration_request_endpoint(
     requested_member_code: str = Form(...),
     full_name: str = Form(...),
     email: Optional[str] = Form(None),
     phone_number: Optional[str] = Form(None),
-    photo: UploadFile = File(...), # Nhận file ảnh từ người dùng
+    # SỬA LỖI: Đặt tham số không mặc định trước tham số có mặc định
+    # Đồng thời, làm cho tham số ảnh TÙY CHỌN để tránh lỗi 422 nếu frontend không gửi ảnh
+    photo: Annotated[Optional[UploadFile], File()] = None, # Ảnh là tùy chọn
     db: Session = Depends(database.get_db)
 ):
-    """Endpoint để người dùng gửi yêu cầu đăng ký thành viên mới, kèm ảnh."""
-    # 1. Xử lý lưu file ảnh tạm
-    # Tạo tên file duy nhất để tránh trùng lặp, ví dụ: member_code + timestamp
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    filename = f"{requested_member_code}_{timestamp}_{photo.filename}"
-    file_path = os.path.join(TEMP_PHOTO_DIR, filename)
+    """
+    Endpoint này hiện tại chỉ log khi được gọi và trả về phản hồi tạm thời.
+    Logic đăng ký thực tế (lưu ảnh, tạo request DB) đã được bỏ qua.
+    """
+    print(f"LOG: Received POST request for /machine/registration-requests/")
+    print(f"LOG: Registration request - Code: {requested_member_code}, Name: {full_name}, Email: {email}, Phone: {phone_number}")
+    if photo:
+        print(f"LOG: Received photo file: {photo.filename}, size: {photo.size} bytes")
+        # Bạn có thể đọc nội dung file ở đây nếu muốn log thêm thông tin về file
+        # contents = await photo.read()
+        # print(f"LOG: Photo content first 10 bytes: {contents[:10]}")
+        # await photo.seek(0) # Quay lại đầu file nếu cần đọc lại sau này
 
-    try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(photo.file, buffer)
-    except Exception as e:
-        # Xử lý lỗi nếu không lưu được file
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Could not save photo: {e}")
-    finally:
-        photo.file.close() # Luôn đóng file sau khi xử lý
+    # Tạm thời trả về phản hồi thành công
+    return {
+        "message": "Received registration request",
+        "requested_member_code": requested_member_code,
+        "full_name": full_name,
+        "photo_received": photo is not None
+    }
 
-    # 2. Tạo Pydantic model cho request
-    request_data = request_schemas.RegistrationRequestCreate(
-        requested_member_code=requested_member_code,
-        full_name=full_name,
-        email=email,
-        phone_number=phone_number,
-        photo_path=file_path # Lưu đường dẫn đến file ảnh đã lưu tạm
-    )
 
-    # 3. Gọi CRUD để tạo request trong DB
-    try:
-        created_request = crud_request.create_registration_request(db=db, request=request_data)
-    except ValueError as ve: # Bắt lỗi từ CRUD nếu member_code đã tồn tại/pending
-        # Xóa file ảnh tạm nếu tạo request thất bại
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
-    except Exception as e: # Lỗi chung khác
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred: {e}")
-
-    return created_request
-
-# --- UC5: Xem Lịch sử Chuyên cần Cá nhân (Sau khi Điểm danh Vào) ---
-# --- UC6: Chỉnh sửa Thông tin Cá nhân (Sau khi Điểm danh Vào) ---
-# Hai UC này được kích hoạt sau khi UC1 (Điểm danh Vào) thành công.
-# Thông thường, Frontend sẽ nhận được member_code hoặc user_id sau UC1,
-# sau đó dùng nó để gọi các API riêng biệt.
-
-@router.get("/users/{member_code}/profile", response_model=user_schemas.User,
-            summary="Lấy thông tin cá nhân của User (Sau khi check-in)")
+# --- UC5: Xem Lịch sử Chuyên cần Cá nhân (Chỉ log) ---
+@router.get("/users/{member_code}/profile",
+            summary="Lấy thông tin cá nhân của User (Chỉ log)")
 def get_user_profile_endpoint(member_code: str, db: Session = Depends(database.get_db)):
     """
-    Lấy thông tin cá nhân của user dựa trên member_code.
-    Thường được gọi sau khi user check-in thành công và muốn xem/sửa thông tin.
+    Endpoint này hiện tại chỉ log khi được gọi và trả về phản hồi tạm thời.
+    Logic truy vấn database thực tế đã được bỏ qua.
     """
-    db_user = crud_user.get_user_by_member_code(db, member_code)
-    if not db_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User profile not found.")
-    if db_user.status != "Approved": # Chỉ user active mới xem/sửa được
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is not active.")
-    return db_user
+    print(f"LOG: Received GET request for /machine/users/{member_code}/profile")
+    print(f"LOG: Profile request for member code: {member_code}")
 
-@router.put("/users/{member_code}/profile", response_model=user_schemas.User,
-            summary="Cập nhật thông tin cá nhân của User (Sau khi check-in)")
+    # Tạm thời trả về phản hồi thành công (dummy user info)
+    return {
+        "id": 999, # Dummy ID
+        "member_code": member_code,
+        "full_name": "Dummy User",
+        "email": "dummy@example.com",
+        "phone_number": "0123456789",
+        "status": "Approved",
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+
+
+# --- UC6: Chỉnh sửa Thông tin Cá nhân (Chỉ log) ---
+@router.put("/users/{member_code}/profile",
+            summary="Cập nhật thông tin cá nhân của User (Chỉ log)")
 def update_user_profile_endpoint(
     member_code: str,
-    user_update_data: user_schemas.UserUpdate, # Dữ liệu cần cập nhật
+    user_update_data: user_schemas.UserUpdate,
     db: Session = Depends(database.get_db)
 ):
     """
-    Cập nhật thông tin cá nhân (không bao gồm ảnh) cho user.
-    User tự thực hiện sau khi check-in.
+    Endpoint này hiện tại chỉ log khi được gọi và trả về phản hồi tạm thời.
+    Logic cập nhật database thực tế đã được bỏ qua.
     """
-    db_user = crud_user.get_user_by_member_code(db, member_code)
-    if not db_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found to update.")
-    if db_user.status != "Approved":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot update profile of an inactive user.")
+    print(f"LOG: Received PUT request for /machine/users/{member_code}/profile")
+    print(f"LOG: Update profile request for member code: {member_code}")
+    print(f"LOG: Received update data: {user_update_data.model_dump_json()}") # Sử dụng model_dump_json() cho Pydantic v2+
 
-    # Kiểm tra email mới (nếu có) có bị trùng với user khác không
-    if user_update_data.email and user_update_data.email != db_user.email:
-        existing_user_with_email = crud_user.get_user_by_email(db, email=user_update_data.email)
-        if existing_user_with_email and existing_user_with_email.id != db_user.id:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered by another user.")
+    # Tạm thời trả về phản hồi thành công (dummy updated user info)
+    return {
+        "id": 999, # Dummy ID
+        "member_code": member_code,
+        "full_name": user_update_data.full_name or "Dummy User",
+        "email": user_update_data.email or "dummy@example.com",
+        "phone_number": user_update_data.phone_number or "0123456789",
+        "status": "Approved",
+        "created_at": datetime.utcnow(), # Cần lấy từ DB thật
+        "updated_at": datetime.utcnow() # Cần lấy từ DB thật
+    }
 
-    updated_user = crud_user.update_user_profile(db, db_user=db_user, user_update=user_update_data)
-    return updated_user
 
 @router.get("/users/{member_code}/attendance-history/completed",
-            response_model=List[attendance_schemas.AttendanceSession],
-            summary="Xem lịch sử các ca đã hoàn thành của User (Sau khi check-in)")
+            summary="Xem lịch sử các ca đã hoàn thành của User (Chỉ log)")
 def get_user_completed_history_endpoint(
     member_code: str,
-    skip: int = 0, limit: int = 20, # Phân trang
+    skip: int = 0, limit: int = 20,
     db: Session = Depends(database.get_db)
 ):
-    """Lấy lịch sử các phiên điểm danh đã checkout của một user cụ thể."""
-    db_user = crud_user.get_user_by_member_code(db, member_code)
-    if not db_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found to get history.")
+    """
+    Endpoint này hiện tại chỉ log khi được gọi và trả về danh sách rỗng tạm thời.
+    Logic truy vấn database thực tế đã được bỏ qua.
+    """
+    print(f"LOG: Received GET request for /machine/users/{member_code}/attendance-history/completed")
+    print(f"LOG: History request for member code: {member_code}, skip: {skip}, limit: {limit}")
 
-    history = crud_attendance.get_user_completed_attendance_history(db, user_id=db_user.id, skip=skip, limit=limit)
-    return history
+    # Tạm thời trả về danh sách rỗng
+    return []
+
 
 # --- Endpoint nhận diện hoặc xác minh khuôn mặt ---
-# Endpoint này sẽ nhận ảnh và tùy chọn mã thành viên từ frontend.
-# URL đầy đủ sẽ là /machine/recognize_face
-@router.post("/recognize_face")
+# Giữ nguyên logic print đã có
+@router.post("/recognize_face",
+            summary="Nhận diện hoặc xác minh khuôn mặt (Đã có log)")
 async def recognize_face_endpoint(
-    # Sửa lỗi: Đặt tham số không mặc định (file) trước tham số có mặc định (member_id)
-    file: Annotated[UploadFile, File()], # Tham số không mặc định
-    member_id: Annotated[Optional[int], Form()] = None, # Tham số có mặc định (Optional[int] và = None)
-    db: Session = Depends(database.get_db) # Thêm tham số db nếu cần truy cập database trong endpoint này
+    file: Annotated[UploadFile, File()],
+    member_id: Annotated[Optional[int], Form()] = None,
+    db: Session = Depends(database.get_db)
 ):
     """
     Endpoint để nhận diện hoặc xác minh khuôn mặt.
     Nhận file ảnh và tùy chọn mã thành viên, xử lý và trả về kết quả.
     """
     try:
-        # In thông tin nhận được để debug
-        print(f"Received request for recognition/verification.")
-        print(f"Member ID: {member_id}, Filename: {file.filename}")
+        print(f"LOG: Received POST request for /machine/recognize_face")
+        print(f"LOG: Recognition/Verification request - Member ID: {member_id}, Filename: {file.filename}")
 
-        # Đọc nội dung file ảnh
+        # Đọc nội dung file ảnh (có thể bỏ qua để đơn giản hóa)
         # contents = await file.read()
 
         # --- THÊM LOGIC XỬ LÝ NHẬN DIỆN HOẶC XÁC MINH KHUÔN MẶT Ở ĐÂY ---
-        # Logic này sẽ sử dụng member_id (nếu có) và contents (nội dung file ảnh).
-        # - Nếu member_id được cung cấp: Thực hiện XÁC MINH khuôn mặt (so sánh ảnh với user có ID đó).
-        # - Nếu member_id KHÔNG được cung cấp: Thực hiện NHẬN DIỆN khuôn mặt (tìm user khớp nhất với ảnh trong DB).
-        #
-        # Bạn sẽ cần import các hàm xử lý AI của mình ở đây.
-        # Ví dụ:
-        # from your_recognition_module import process_face_recognition, verify_face
-        #
-        # if member_id is not None:
-        #     # Logic xác minh
-        #     is_match = await verify_face(db, member_id, contents) # Truyền db nếu hàm cần
-        #     if is_match:
-        #         # Xác minh thành công
-        #         return {"message": "Face verification successful", "member_id": member_id}
-        #     else:
-        #         # Xác minh thất bại
-        #         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Face verification failed. The face does not match the member ID.")
-        # else:
-        #     # Logic nhận diện
-        #     recognized_user_id = await process_face_recognition(db, contents) # Truyền db nếu hàm cần
-        #     if recognized_user_id:
-        #         # Nhận diện thành công, trả về ID hoặc thông tin user
-        #         return {"message": "Face recognized", "member_id": recognized_user_id}
-        #     else:
-        #         # Không nhận diện được khuôn mặt
-        #         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No matching face found in the database.")
-        # --- KẾT THÚC LOGIC XỬ LÝ ---
+        # ... (code gọi hàm xử lý AI, truy cập DB nếu cần) ...
 
         # Tạm thời trả về phản hồi thành công để kiểm tra kết nối
-        # Bạn có thể xóa dòng này sau khi thêm logic xử lý thật
         return {"message": "Recognition/Verification process received", "member_id": member_id, "filename": file.filename}
 
     except HTTPException as http_exc:
-        # Bắt các HTTPException đã raise ở trên để trả về cho client
         raise http_exc
     except Exception as e:
-        # Bắt các lỗi ngoại lệ khác
-        print(f"Error processing recognition/verification request: {e}")
-        # Trả về lỗi HTTP 500 nếu có exception không mong muốn
+        print(f"ERROR: Error processing recognition/verification request: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error: {e}")
 
-# ... (các endpoint khác trong user_endpoints.py nếu có)

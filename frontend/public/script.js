@@ -29,22 +29,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const webcamFeed = document.getElementById('webcamFeed');
     const canvasForCapture = document.getElementById('canvasForCapture');
     const captureImageButton = document.getElementById('captureImageButton');
+    const recognitionStatusMessageDiv = document.getElementById('recognitionStatusMessage');
+
+
+    // --- Lấy các phần tử của màn hình xem danh sách người dùng ---
+    const usersInLibraryListDiv = document.getElementById('usersInLibraryList');
+
 
     // --- Lấy các phần tử của màn hình đăng ký thành viên ---
     const regNameInput = document.getElementById('regName');
     const regEmailInput = document.getElementById('regEmail');
     const regPhoneInput = document.getElementById('regPhone');
     const submitRegistrationButton = document.getElementById('submitRegistration');
+    const regPhotoInput = document.getElementById('regPhotoInput'); // Input file cho ảnh đăng ký
+    const registrationMessageDiv = document.createElement('div');
+    registrationMessageDiv.className = 'message';
+     if (submitRegistrationButton) {
+        submitRegistrationButton.parentNode.insertBefore(registrationMessageDiv, submitRegistrationButton.nextSibling);
+    }
+
 
     let mediaStream = null;
 
     // --- Cấu hình Backend API URL ---
-    // Khi chạy trong Docker Compose, frontend có thể truy cập backend bằng tên dịch vụ
-    // và cổng mà backend lắng nghe bên trong container (thường là 8000 cho FastAPI)
     const BACKEND_API_URL = 'http://localhost:8000/machine';
-    // Endpoint nhận diện khuôn mặt. Cần kiểm tra lại endpoint thực tế trong Backend của bạn (thư mục 'app')
-    // Ví dụ: nếu endpoint là /api/v1/face/recognize, thì RECOGNIZE_FACE_ENDPOINT = '/api/v1/face/recognize';
-    const RECOGNIZE_FACE_ENDPOINT = '/recognize_face'; // <-- Cần kiểm tra lại endpoint này trong Backend của bạn
+    const RECOGNIZE_FACE_ENDPOINT = '/recognize_face';
+    const CHECK_USER_ENDPOINT = '/users/'; // Endpoint kiểm tra user: /machine/users/{member_code}/check
+    const USERS_IN_LIBRARY_ENDPOINT = '/attendance/in-library'; // Endpoint xem người dùng đang ở thư viện
+    const REGISTRATION_ENDPOINT = '/registration-requests/'; // Endpoint đăng ký
+    const CHECK_IN_ENDPOINT = '/attendance/check-in'; // Endpoint điểm danh vào (nếu cần gọi riêng)
+
 
     // --- Hàm điều khiển hiển thị màn hình ---
     function showScreen(screenToShow) {
@@ -69,13 +83,45 @@ document.addEventListener('DOMContentLoaded', () => {
         if (regNameInput) regNameInput.value = '';
         if (regEmailInput) regEmailInput.value = '';
         if (regPhoneInput) regPhoneInput.value = '';
+        if (regPhotoInput) regPhotoInput.value = ''; // Xóa file đã chọn
+        if (recognitionStatusMessageDiv) {
+             recognitionStatusMessageDiv.textContent = '';
+             recognitionStatusMessageDiv.className = 'message';
+        }
+         if (registrationMessageDiv) {
+             registrationMessageDiv.textContent = '';
+             registrationMessageDiv.className = 'message';
+        }
+        // Xóa nội dung danh sách người dùng khi chuyển màn hình khác
+        if (usersInLibraryListDiv) {
+             usersInLibraryListDiv.innerHTML = '<p>Đang tải danh sách...</p>'; // Reset placeholder
+        }
     }
 
     // --- Hàm để hiển thị thông báo trên màn hình nhập mã ---
     function showMemberIdMessage(msg, type) {
-        memberIdMessageDiv.textContent = msg;
-        memberIdMessageDiv.className = 'message ' + type;
+        if (memberIdMessageDiv) {
+            memberIdMessageDiv.textContent = msg;
+            memberIdMessageDiv.className = 'message ' + type;
+        }
     }
+
+    // --- Hàm để hiển thị thông báo trên màn hình nhận diện ---
+    function showRecognitionMessage(msg, type) {
+        if (recognitionStatusMessageDiv) {
+            recognitionStatusMessageDiv.textContent = msg;
+            recognitionStatusMessageDiv.className = 'message ' + type;
+        }
+    }
+
+     // --- Hàm để hiển thị thông báo trên màn hình đăng ký ---
+    function showRegistrationMessage(msg, type) {
+        if (registrationMessageDiv) {
+            registrationMessageDiv.textContent = msg;
+            registrationMessageDiv.className = 'message ' + type;
+        }
+    }
+
 
     // --- Xử lý Webcam ---
     async function startWebcam() {
@@ -93,11 +139,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Lỗi khi truy cập webcam:', error);
                 alert('Không thể truy cập webcam. Vui lòng cho phép trình duyệt sử dụng camera và thử lại.');
-                showScreen(memberIdInputScreen);
+                showScreen(mainMenuScreen); // Quay về menu chính nếu lỗi webcam
             }
         } else {
             alert('Trình duyệt của bạn không hỗ trợ truy cập webcam.');
-            showScreen(memberIdInputScreen);
+            showScreen(mainMenuScreen); // Quay về menu chính nếu không hỗ trợ
         }
     }
 
@@ -139,57 +185,40 @@ document.addEventListener('DOMContentLoaded', () => {
             context.setTransform(1, 0, 0, 1, 0, 0);
 
             const imageDataURL = canvasForCapture.toDataURL('image/jpeg', 0.9); // Lấy ảnh dưới dạng Data URL
-            const currentMemberId = displayMemberId.textContent;
+            const currentMemberId = displayMemberId.textContent; // Lấy mã thành viên từ phần tử hiển thị
 
             console.log('Đang gửi ảnh và mã thành viên đến Backend...');
+            showRecognitionMessage('Đang xử lý nhận diện...', 'info'); // Hiển thị thông báo đang xử lý
 
             try {
-                // Gửi yêu cầu đến Backend-DB (thư mục 'app')
-                // Sử dụng FormData để gửi file và các trường form khác
-                const formData = new FormData(); // 1. Tạo đối tượng FormData
-
-                // 2. Chuyển Data URL sang Blob và thêm vào FormData
+                const formData = new FormData(); // Tạo đối tượng FormData
                 const imageBlob = dataURLtoBlob(imageDataURL); // Chuyển Data URL sang Blob
-                // Thêm Blob vào FormData với tên trường 'file' và tên file
-                formData.append('file', imageBlob, 'webcam_image.jpeg'); // Tên trường phải là 'file', tên file tùy ý
-
-                // Thêm mã thành viên với tên trường 'member_id'
-                formData.append('member_id', currentMemberId); // Tên trường phải là 'member_id'
+                formData.append('file', imageBlob, 'webcam_image.jpeg'); // Thêm Blob vào FormData với tên trường 'file'
+                formData.append('member_id', currentMemberId); // Thêm mã thành viên với tên trường 'member_id'
 
                 const response = await fetch(`${BACKEND_API_URL}${RECOGNIZE_FACE_ENDPOINT}`, {
                     method: 'POST',
-                    // 3. KHÔNG cần thiết lập Content-Type header một cách thủ công
-                    // Khi gửi FormData, trình duyệt sẽ tự động thiết lập Content-Type là multipart/form-data
-                    // headers: {
-                    //     'Content-Type': 'application/json', // XÓA hoặc COMMENT dòng này
-                    // },
-                    body: formData // 4. Truyền đối tượng FormData vào body
+                    body: formData // Gửi FormData
                 });
 
-                // Kiểm tra xem phản hồi có thành công không (status code 2xx)
                 if (!response.ok) {
-                    // Nếu có lỗi từ backend (ví dụ: 400, 401, 404, 422, 500), ném lỗi để catch block xử lý
-                    const errorResult = await response.json(); // Đọc phản hồi lỗi từ backend
+                    const errorResult = await response.json();
                     console.error('Lỗi từ Backend:', response.status, errorResult);
-                    // Ném một Exception để bắt ở khối catch
-                    throw new Error(`Backend responded with status ${response.status}: ${JSON.stringify(errorResult)}`);
+                    showRecognitionMessage(`Lỗi từ Backend: ${response.status} - ${JSON.stringify(errorResult.detail || errorResult)}`, 'error');
+                    // throw new Error(`Backend responded with status ${response.status}`); // Tạm bỏ throw để không crash
+                } else {
+                    const result = await response.json();
+                    console.log('Phản hồi từ Backend:', result);
+                     // Hiển thị thông báo thành công chung từ backend
+                    showRecognitionMessage(`Thành công: ${result.message || JSON.stringify(result)}`, 'success');
                 }
 
-                const result = await response.json(); // Phân tích phản hồi JSON từ backend
-                console.log('Phản hồi từ Backend:', result);
-
-                // --- Xử lý kết quả thành công ở đây ---
-                // Dựa vào cấu trúc phản hồi từ backend (ví dụ: {"message": "...", "member_id": ...})
-                // Cập nhật giao diện người dùng
-                // Ví dụ: displayRecognitionResult(result);
 
             } catch (error) {
                 console.error('Lỗi khi gửi yêu cầu đến Backend:', error);
-                // --- Xử lý lỗi ở đây ---
-                // Hiển thị thông báo lỗi cho người dùng trên giao diện
-                // Ví dụ: displayErrorMessage('Đã xảy ra lỗi khi kết nối hoặc xử lý nhận diện.');
-                // Nếu lỗi là do backend trả về HTTPException (ví dụ: 401, 404, 422),
-                // thông tin chi tiết lỗi có thể nằm trong error.message (nếu bạn ném lỗi như ví dụ trên)
+                if (!recognitionStatusMessageDiv.textContent.startsWith('Lỗi từ Backend:')) {
+                     showRecognitionMessage('Đã xảy ra lỗi khi gửi yêu cầu.', 'error');
+                }
             }
 
         });
@@ -205,10 +234,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (goToViewMembersScreenButton) {
-        goToViewMembersScreenButton.addEventListener('click', () => {
+        goToViewMembersScreenButton.addEventListener('click', async () => { // Sử dụng async
             showScreen(viewMembersScreen);
-            // TODO: Gọi Backend-DB để tải danh sách thành viên
-            // Ví dụ: fetch(`${BACKEND_API_URL}/members_in_library`)
+            // showRecognitionMessage('Đang tải danh sách...', 'info'); // Sử dụng tạm recognition message div hoặc tạo div mới
+            // Xóa nội dung cũ trước khi tải
+            if (usersInLibraryListDiv) usersInLibraryListDiv.innerHTML = '<p>Đang tải danh sách...</p>'; // Hiển thị placeholder
+
+            try {
+                // Gọi Backend để tải danh sách thành viên đang ở thư viện
+                console.log(`Đang gọi API: GET ${BACKEND_API_URL}${USERS_IN_LIBRARY_ENDPOINT}`);
+                const response = await fetch(`${BACKEND_API_URL}${USERS_IN_LIBRARY_ENDPOINT}`);
+
+                if (!response.ok) {
+                    const errorResult = await response.json();
+                     console.error('Lỗi khi tải danh sách:', response.status, errorResult);
+                     if (usersInLibraryListDiv) usersInLibraryListDiv.innerHTML = `<p class="message error">Lỗi khi tải danh sách: ${response.status}</p>`;
+                     // throw new Error(`Backend responded with status ${response.status}`); // Tạm bỏ throw
+                     return; // Dừng lại nếu lỗi
+                }
+
+                const users = await response.json();
+                console.log('Danh sách người dùng đang ở thư viện:', users);
+
+                 // --- Hiển thị danh sách trên giao diện (vẫn giữ logic hiển thị) ---
+                 if (usersInLibraryListDiv) {
+                     if (users.length === 0) {
+                          usersInLibraryListDiv.innerHTML = '<p>Không có người dùng nào đang ở thư viện.</p>';
+                     } else {
+                         let html = '<h3>Người dùng đang ở thư viện:</h3><ul>';
+                         users.forEach(user => {
+                             // Dựa vào cấu trúc UserInLibrary schema: session_id, member_code, full_name, entry_time
+                             const entryTime = user.entry_time ? new Date(user.entry_time).toLocaleString() : 'N/A'; // Định dạng thời gian, kiểm tra null
+                             html += `<li>Mã: ${user.member_code} - Tên: ${user.full_name} - Vào lúc: ${entryTime}</li>`;
+                         });
+                         html += '</ul>';
+                         usersInLibraryListDiv.innerHTML = html;
+                     }
+                 }
+
+
+            } catch (error) {
+                console.error('Lỗi khi gửi yêu cầu tải danh sách:', error);
+                if (usersInLibraryListDiv) usersInLibraryListDiv.innerHTML = `<p class="message error">Đã xảy ra lỗi khi gửi yêu cầu tải danh sách.</p>`;
+            }
+
         });
     }
 
@@ -247,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Logic cho màn hình Nhập Mã Thành viên ---
 
     if (submitMemberIdButton) {
-        submitMemberIdButton.addEventListener('click', () => {
+        submitMemberIdButton.addEventListener('click', async () => { // Sử dụng async
             const memberId = memberIdInput.value.trim();
 
             if (memberId === '') {
@@ -255,24 +324,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            console.log('Mã thành viên đã nhập:', memberId);
+            console.log('Đang kiểm tra mã thành viên:', memberId);
+            showMemberIdMessage('Đang kiểm tra mã thành viên...', 'info'); // Hiển thị thông báo đang kiểm tra
 
-            // Lưu ý: Logic kiểm tra mã thành viên hợp lệ (ví dụ: 5 chữ số)
-            // nên được thực hiện ở Backend để đảm bảo an toàn và nhất quán.
-            // Phần kiểm tra ở frontend này chỉ mang tính tạm thời.
 
-            // Giả lập kiểm tra ở frontend để chuyển màn hình nhanh
-            if (memberId.length >= 1) { // Chỉ cần có nhập gì đó là chuyển màn hình
-                 showMemberIdMessage('Đang chuyển đến xác thực khuôn mặt...', 'success');
-                 displayMemberId.textContent = memberId;
-                 showScreen(faceRecognitionScreen);
-               } else {
-                 showMemberIdMessage('Vui lòng nhập mã thành viên.', 'error');
-                 setTimeout(() => {
-                     memberIdMessageDiv.textContent = '';
-                     memberIdMessageDiv.className = 'message';
-                 }, 5000);
-               }
+            try {
+                // Gọi Backend để kiểm tra mã thành viên
+                 console.log(`Đang gọi API: GET ${BACKEND_API_URL}${CHECK_USER_ENDPOINT}${memberId}/check`);
+                const response = await fetch(`${BACKEND_API_URL}${CHECK_USER_ENDPOINT}${memberId}/check`); // Sử dụng endpoint mới
+
+                if (!response.ok) {
+                    const errorResult = await response.json();
+                    console.error('Lỗi khi kiểm tra mã thành viên:', response.status, errorResult);
+                    showMemberIdMessage(`Lỗi: ${errorResult.detail || 'Mã thành viên không hợp lệ.'}`, 'error');
+                    // throw new Error(`Backend responded with status ${response.status}`); // Tạm bỏ throw
+                    return; // Dừng lại nếu lỗi
+                }
+
+                const user = await response.json();
+                console.log('Mã thành viên hợp lệ:', user);
+
+                // Nếu mã thành viên hợp lệ, chuyển sang màn hình nhận diện
+                showMemberIdMessage(`Mã thành viên hợp lệ. Đang chuyển đến xác thực khuôn mặt...`, 'success');
+                displayMemberId.textContent = memberId; // Hiển thị mã thành viên trên màn hình nhận diện
+                // Chờ một chút trước khi chuyển màn hình để người dùng kịp đọc thông báo
+                setTimeout(() => {
+                    showScreen(faceRecognitionScreen);
+                }, 1500); // Chờ 1.5 giây
+
+
+            } catch (error) {
+                console.error('Lỗi khi gửi yêu cầu kiểm tra mã thành viên:', error);
+                showMemberIdMessage('Đã xảy ra lỗi khi kiểm lý mã thành viên.', 'error');
+            }
         });
     }
 
@@ -284,22 +368,87 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Logic cho màn hình Đăng ký Thành viên (placeholder) ---
+    // --- Logic cho màn hình Đăng ký Thành viên ---
     if (submitRegistrationButton) {
-        submitRegistrationButton.addEventListener('click', () => {
+        submitRegistrationButton.addEventListener('click', async () => { // Sử dụng async
             const name = regNameInput.value.trim();
             const email = regEmailInput.value.trim();
             const phone = regPhoneInput.value.trim();
+            // Lấy mã thành viên yêu cầu (nếu có trường nhập riêng)
+            // const requestedMemberCode = document.getElementById('regMemberCodeInput').value.trim(); // Ví dụ
 
+            // Lấy file ảnh từ input (nếu có input file)
+            const photoInput = document.getElementById('regPhotoInput'); // Lấy input file element
+            const photoFile = photoInput && photoInput.files && photoInput.files.length > 0 ? photoInput.files[0] : null; // Lấy File object đầu tiên
+
+
+            // --- Kiểm tra dữ liệu (thêm kiểm tra mã thành viên yêu cầu và ảnh nếu cần) ---
             if (name === '' || email === '' || phone === '') {
-                alert('Vui lòng điền đầy đủ thông tin để đăng ký!');
+                showRegistrationMessage('Vui lòng điền đầy đủ thông tin bắt buộc.', 'error');
                 return;
             }
+            // if (!requestedMemberCode) {
+            //      showRegistrationMessage('Vui lòng nhập mã thành viên yêu cầu.', 'error');
+            //      return;
+            // }
+            // Ảnh giờ là tùy chọn ở backend, nên không cần kiểm tra bắt buộc ở đây
+            // if (!photoFile) {
+            //      showRegistrationMessage('Vui lòng chọn ảnh để đăng ký.', 'error');
+            //      return;
+            // }
 
-            // TODO: Gửi dữ liệu đăng ký này tới backend-DB
-            console.log('Dữ liệu đăng ký:', { name, email, phone });
-            alert(`Yêu cầu đăng ký của ${name} đã được gửi! (Chức năng này sẽ kết nối backend-DB sau)`);
-            showScreen(mainMenuScreen);
+
+            console.log('Đang gửi yêu cầu đăng ký:', { name, email, phone, photo: photoFile ? photoFile.name : 'Không có ảnh' });
+            showRegistrationMessage('Đang gửi yêu cầu đăng ký...', 'info'); // Hiển thị thông báo đang gửi
+
+            try {
+                const formData = new FormData(); // Tạo FormData
+
+                // Thêm các trường dữ liệu vào FormData (tên trường phải khớp backend)
+                // formData.append('requested_member_code', requestedMemberCode); // Thêm mã thành viên yêu cầu nếu có
+                formData.append('full_name', name);
+                formData.append('email', email);
+                formData.append('phone_number', phone);
+
+                // Thêm file ảnh vào FormData (nếu có input file và người dùng đã chọn)
+                if (photoFile) {
+                     formData.append('photo', photoFile, photoFile.name); // 'photo' là tên tham số trong backend
+                }
+
+                console.log(`Đang gọi API: POST ${BACKEND_API_URL}${REGISTRATION_ENDPOINT}`);
+                const response = await fetch(`${BACKEND_API_URL}${REGISTRATION_ENDPOINT}`, {
+                    method: 'POST',
+                    body: formData // Gửi FormData
+                });
+
+                // Kiểm tra phản hồi
+                if (!response.ok) {
+                    const errorResult = await response.json();
+                    console.error('Lỗi từ Backend khi đăng ký:', response.status, errorResult);
+                    showRegistrationMessage(`Lỗi khi đăng ký: ${response.status} - ${JSON.stringify(errorResult.detail || errorResult)}`, 'error');
+                    // throw new Error(`Backend responded with status ${response.status}`); // Tạm bỏ throw
+                } else {
+                    const result = await response.json();
+                    console.log('Đăng ký thành công:', result);
+                    showRegistrationMessage('Đăng ký thành công!', 'success'); // Hiển thị thông báo thành công
+
+                    // Sau khi đăng ký thành công, có thể xóa form và chuyển về màn hình chính
+                     regNameInput.value = '';
+                     regEmailInput.value = '';
+                     regPhoneInput.value = '';
+                     if(regPhotoInput) regPhotoInput.value = ''; // Xóa file đã chọn
+                    // setTimeout(() => {
+                    //     showScreen(mainMenuScreen); // Tạm bỏ chuyển màn hình tự động
+                    // }, 3000);
+                }
+
+
+            } catch (error) {
+                console.error('Lỗi khi gửi yêu cầu đăng ký:', error);
+                 if (!registrationMessageDiv.textContent.startsWith('Lỗi khi đăng ký:')) {
+                     showRegistrationMessage('Đã xảy ra lỗi khi gửi yêu cầu đăng ký.', 'error');
+                 }
+            }
         });
     }
 

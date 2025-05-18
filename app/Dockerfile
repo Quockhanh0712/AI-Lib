@@ -1,14 +1,17 @@
 # D:\AI-Lib\app\Dockerfile
 
 # Sử dụng một image Python cơ bản
+# Chọn phiên bản Python phù hợp với dự án của bạn (ví dụ: python:3.9-slim-buster)
 FROM python:3.9-slim-buster
 
-# Cài đặt các gói hệ thống cần thiết cho việc biên dịch mysqlclient
+# Cài đặt các gói hệ thống cần thiết cho việc biên dịch mysqlclient (giữ lại nếu cần)
+# và thêm sqlite3
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
     pkg-config \
-    libmariadb-dev && \
+    libmariadb-dev \
+    sqlite3 && \
     rm -rf /var/lib/apt/lists/*
 
 # Đặt thư mục làm việc bên trong container

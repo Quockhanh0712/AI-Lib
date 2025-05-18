@@ -7,27 +7,41 @@ from core.config import settings # Import đối tượng settings từ config.p
 # Lấy chuỗi kết nối DB từ cấu hình
 SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
 
-# Tạo SQLAlchemy engine: đây là "cổng" để SQLAlchemy nói chuyện với database driver (mysqlclient)
-# pool_pre_ping=True: kiểm tra kết nối trước mỗi lần lấy từ pool (hữu ích cho kết nối dài hạn)
+# Tạo SQLAlchemy engine
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
 
 # Tạo một "nhà máy" (factory) để tạo ra các DB session
-# Mỗi instance của SessionLocal sẽ là một session (phiên làm việc) với database
-# autocommit=False: Các thay đổi không tự động được lưu vào DB, bạn cần gọi db.commit()
-# autoflush=False: Các thay đổi không tự động được gửi tạm thời vào DB trước khi commit
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Tạo một lớp Base mà tất cả các model (định nghĩa bảng) của SQLAlchemy sẽ kế thừa
-# Điều này giúp SQLAlchemy quản lý các model và ánh xạ chúng tới các bảng trong DB
 Base = declarative_base()
 
-# Dependency Injection cho FastAPI: Hàm này sẽ được gọi để cung cấp một DB session
-# cho mỗi API endpoint cần tương tác với database.
-def get_db():
-    db = SessionLocal() # Tạo một session mới
+# --- Import models *sau* khi Base được định nghĩa ---
+# Điều này giúp Base.metadata nhận diện được tất cả các model khi create_all được gọi
+from . import models
+
+
+# --- Hàm tạo bảng database khi ứng dụng khởi động ---
+# Đảm bảo hàm này được định nghĩa ở cấp cao nhất của file (không bị thụt lề)
+def create_database_tables():
+    """Tạo các bảng database dựa trên các model nếu chúng chưa tồn tại."""
+    print("Attempting to create database tables...") # Thêm dòng print để debug
     try:
-        yield db # "Yield" session cho API endpoint sử dụng
-                 # Code của API endpoint sẽ chạy ở đây
+        # Base.metadata.create_all sẽ tạo các bảng cho tất cả các model kế thừa từ Base
+        # Đảm bảo các model đã được import ở đâu đó để Base.metadata nhận diện được chúng
+        Base.metadata.create_all(bind=engine)
+        print("Database tables created/checked successfully.")
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
+        # Có thể raise Exception ở đây nếu bạn muốn ứng dụng dừng lại khi tạo bảng lỗi
+        # raise e
+
+
+# Dependency Injection cho FastAPI: Hàm này sẽ được gọi để cung cấp một DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
     finally:
-        db.close() # Đóng session sau khi API endpoint hoàn thành (dù thành công hay lỗi)
-                   # Điều này rất quan trọng để giải phóng tài nguyên DB.
+        db.close()
+

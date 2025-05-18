@@ -46,12 +46,14 @@
             <p>Đang xác thực cho thành viên có mã: <strong id="displayMemberId"></strong></p>
 
             <video id="webcamFeed" autoplay playsinline></video>
-            <canvas id="canvasForCapture" style="display: none;"></canvas> 
+            <canvas id="canvasForCapture" style="display: none;"></canvas>
 
             <button id="captureImageButton" class="main-button camera-button">
                 <i class="fas fa-camera"></i> Chụp ảnh
             </button>
-            
+
+            <div id="recognitionStatusMessage" class="message"></div>
+
             <button id="backToMemberIdInput" class="secondary-button">
                 <i class="fas fa-arrow-left"></i> Quay lại
             </button>
@@ -62,15 +64,9 @@
         <div class="container">
             <h1><i class="fas fa-list"></i> Người đang ở Thư viện</h1>
             <p>Danh sách các thành viên đang có mặt:</p>
-            
-            <div class="member-list-placeholder">
-                <ul>
-                    <li><i class="fas fa-circle-user"></i> Nguyễn Văn A (ID: 12345) - Đang đọc sách</li>
-                    <li><i class="fas fa-circle-user"></i> Trần Thị B (ID: 67890) - Học nhóm</li>
-                    <li><i class="fas fa-circle-user"></i> Lê Hoàng C (ID: 11223) - Đang tìm tài liệu</li>
-                    <li><i class="fas fa-circle-user"></i> ... (Dữ liệu sẽ được tải từ Backend)</li>
-                </ul>
-            </div>
+
+            <div id="usersInLibraryList">
+                <p>Đang tải danh sách...</p> </div>
 
             <button id="backToMainFromViewMembers" class="secondary-button">
                 <i class="fas fa-arrow-left"></i> Quay lại
@@ -95,10 +91,13 @@
                 <label for="regPhone">Số điện thoại:</label>
                 <input type="tel" id="regPhone" placeholder="Ví dụ: 0987xxxxxx">
             </div>
+            <div class="form-group">
+                 <label for="regPhotoInput">Ảnh khuôn mặt:</label>
+                 <input type="file" id="regPhotoInput" accept="image/*"> </div>
+
             <button id="submitRegistration" class="main-button">
                 <i class="fas fa-paper-plane"></i> Gửi Yêu cầu
             </button>
-
             <button id="backToMainFromRegister" class="secondary-button">
                 <i class="fas fa-arrow-left"></i> Quay lại
             </button>
