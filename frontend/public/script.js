@@ -5,19 +5,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainMenuScreen = document.getElementById('mainMenuScreen');
     const memberIdInputScreen = document.getElementById('memberIdInputScreen');
     const faceRecognitionScreen = document.getElementById('faceRecognitionScreen');
-    const viewMembersScreen = document.getElementById('viewMembersScreen'); // Màn hình mới
-    const registerMemberScreen = document.getElementById('registerMemberScreen'); // Màn hình mới
+    const viewMembersScreen = document.getElementById('viewMembersScreen');
+    const registerMemberScreen = document.getElementById('registerMemberScreen');
 
     // --- Lấy các nút điều hướng trên màn hình chính ---
     const goToMemberIdInputButton = document.getElementById('goToMemberIdInput');
-    const goToViewMembersScreenButton = document.getElementById('goToViewMembersScreen'); // Nút mới
-    const goToRegisterMemberScreenButton = document.getElementById('goToRegisterMemberScreen'); // Nút mới
+    const goToViewMembersScreenButton = document.getElementById('goToViewMembersScreen');
+    const goToRegisterMemberScreenButton = document.getElementById('goToRegisterMemberScreen');
 
     // --- Lấy các nút "Quay lại" ---
     const backToMainFromMemberIdButton = document.getElementById('backToMainFromMemberId');
     const backToMemberIdInputButton = document.getElementById('backToMemberIdInput');
-    const backToMainFromViewMembersButton = document.getElementById('backToMainFromViewMembers'); // Nút mới
-    const backToMainFromRegisterButton = document.getElementById('backToMainFromRegister'); // Nút mới
+    const backToMainFromViewMembersButton = document.getElementById('backToMainFromViewMembers');
+    const backToMainFromRegisterButton = document.getElementById('backToMainFromRegister');
 
     // --- Lấy các phần tử của màn hình nhập mã thành viên ---
     const memberIdInput = document.getElementById('memberIdInput');
@@ -37,6 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitRegistrationButton = document.getElementById('submitRegistration');
 
     let mediaStream = null;
+
+    // --- Cấu hình Backend API URL ---
+    // Khi chạy trong Docker Compose, frontend có thể truy cập backend bằng tên dịch vụ
+    // và cổng mà backend lắng nghe bên trong container (thường là 8000 cho FastAPI)
+    const BACKEND_API_URL = 'http://localhost:8000/machine';
+    // Endpoint nhận diện khuôn mặt. Cần kiểm tra lại endpoint thực tế trong Backend của bạn (thư mục 'app')
+    // Ví dụ: nếu endpoint là /api/v1/face/recognize, thì RECOGNIZE_FACE_ENDPOINT = '/api/v1/face/recognize';
+    const RECOGNIZE_FACE_ENDPOINT = '/recognize_face'; // <-- Cần kiểm tra lại endpoint này trong Backend của bạn
 
     // --- Hàm điều khiển hiển thị màn hình ---
     function showScreen(screenToShow) {
@@ -58,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
             memberIdMessageDiv.textContent = '';
             memberIdMessageDiv.className = 'message';
         }
-        // Có thể thêm logic xóa form đăng ký ở đây
         if (regNameInput) regNameInput.value = '';
         if (regEmailInput) regEmailInput.value = '';
         if (regPhoneInput) regPhoneInput.value = '';
@@ -103,6 +110,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Hàm chuyển đổi Data URL sang Blob ---
+    function dataURLtoBlob(dataurl) {
+        const arr = dataurl.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], { type: mime });
+    }
+
+
     // --- Xử lý khi nhấn nút "Chụp ảnh" (gửi ảnh đến Backend) ---
     if (captureImageButton) {
         captureImageButton.addEventListener('click', async () => {
@@ -117,43 +138,65 @@ document.addEventListener('DOMContentLoaded', () => {
             context.drawImage(webcamFeed, 0, 0, canvasForCapture.width, canvasForCapture.height);
             context.setTransform(1, 0, 0, 1, 0, 0);
 
-            const imageDataURL = canvasForCapture.toDataURL('image/jpeg', 0.9);
+            const imageDataURL = canvasForCapture.toDataURL('image/jpeg', 0.9); // Lấy ảnh dưới dạng Data URL
             const currentMemberId = displayMemberId.textContent;
 
             console.log('Đang gửi ảnh và mã thành viên đến Backend...');
-            
+
             try {
-                const response = await fetch('http://localhost:5000/recognize_face', {
+                // Gửi yêu cầu đến Backend-DB (thư mục 'app')
+                // Sử dụng FormData để gửi file và các trường form khác
+                const formData = new FormData(); // 1. Tạo đối tượng FormData
+
+                // 2. Chuyển Data URL sang Blob và thêm vào FormData
+                const imageBlob = dataURLtoBlob(imageDataURL); // Chuyển Data URL sang Blob
+                // Thêm Blob vào FormData với tên trường 'file' và tên file
+                formData.append('file', imageBlob, 'webcam_image.jpeg'); // Tên trường phải là 'file', tên file tùy ý
+
+                // Thêm mã thành viên với tên trường 'member_id'
+                formData.append('member_id', currentMemberId); // Tên trường phải là 'member_id'
+
+                const response = await fetch(`${BACKEND_API_URL}${RECOGNIZE_FACE_ENDPOINT}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        member_id: currentMemberId,
-                        image: imageDataURL
-                    }),
+                    // 3. KHÔNG cần thiết lập Content-Type header một cách thủ công
+                    // Khi gửi FormData, trình duyệt sẽ tự động thiết lập Content-Type là multipart/form-data
+                    // headers: {
+                    //     'Content-Type': 'application/json', // XÓA hoặc COMMENT dòng này
+                    // },
+                    body: formData // 4. Truyền đối tượng FormData vào body
                 });
 
-                const result = await response.json();
+                // Kiểm tra xem phản hồi có thành công không (status code 2xx)
+                if (!response.ok) {
+                    // Nếu có lỗi từ backend (ví dụ: 400, 401, 404, 422, 500), ném lỗi để catch block xử lý
+                    const errorResult = await response.json(); // Đọc phản hồi lỗi từ backend
+                    console.error('Lỗi từ Backend:', response.status, errorResult);
+                    // Ném một Exception để bắt ở khối catch
+                    throw new Error(`Backend responded with status ${response.status}: ${JSON.stringify(errorResult)}`);
+                }
+
+                const result = await response.json(); // Phân tích phản hồi JSON từ backend
                 console.log('Phản hồi từ Backend:', result);
 
-                if (result.status === 'success') {
-                    alert(`Xác thực thành công! Chào mừng ${result.member_name} (ID: ${result.member_id})`);
-                    showScreen(mainMenuScreen);
-                } else {
-                    alert(`Xác thực thất bại: ${result.message}`);
-                }
+                // --- Xử lý kết quả thành công ở đây ---
+                // Dựa vào cấu trúc phản hồi từ backend (ví dụ: {"message": "...", "member_id": ...})
+                // Cập nhật giao diện người dùng
+                // Ví dụ: displayRecognitionResult(result);
 
             } catch (error) {
                 console.error('Lỗi khi gửi yêu cầu đến Backend:', error);
-                alert('Đã xảy ra lỗi khi kết nối với hệ thống nhận diện. Vui lòng thử lại.');
+                // --- Xử lý lỗi ở đây ---
+                // Hiển thị thông báo lỗi cho người dùng trên giao diện
+                // Ví dụ: displayErrorMessage('Đã xảy ra lỗi khi kết nối hoặc xử lý nhận diện.');
+                // Nếu lỗi là do backend trả về HTTPException (ví dụ: 401, 404, 422),
+                // thông tin chi tiết lỗi có thể nằm trong error.message (nếu bạn ném lỗi như ví dụ trên)
             }
+
         });
     }
 
     // --- Xử lý sự kiện nút bấm điều hướng ---
 
-    // Nút "Điểm danh Khuôn mặt" trên màn hình chính -> Chuyển đến màn hình nhập mã
     if (goToMemberIdInputButton) {
         goToMemberIdInputButton.addEventListener('click', () => {
             showScreen(memberIdInputScreen);
@@ -161,31 +204,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Nút "Xem Người đang ở Thư viện" trên màn hình chính -> Chuyển đến màn hình xem thành viên
     if (goToViewMembersScreenButton) {
         goToViewMembersScreenButton.addEventListener('click', () => {
             showScreen(viewMembersScreen);
-            // TODO: Tại đây, bạn có thể gọi backend để tải danh sách thành viên
-            // alert('Tính năng Xem Người đang ở Thư viện sẽ hiển thị danh sách tại đây!');
+            // TODO: Gọi Backend-DB để tải danh sách thành viên
+            // Ví dụ: fetch(`${BACKEND_API_URL}/members_in_library`)
         });
     }
 
-    // Nút "Gửi Yêu cầu Đăng ký Thành viên" trên màn hình chính -> Chuyển đến màn hình đăng ký
     if (goToRegisterMemberScreenButton) {
         goToRegisterMemberScreenButton.addEventListener('click', () => {
             showScreen(registerMemberScreen);
-            regNameInput.focus(); // Tự động focus vào ô tên
+            regNameInput.focus();
         });
     }
 
-    // Nút "Quay lại" từ màn hình nhập mã -> Về màn hình chính
     if (backToMainFromMemberIdButton) {
         backToMainFromMemberIdButton.addEventListener('click', () => {
             showScreen(mainMenuScreen);
         });
     }
 
-    // Nút "Quay lại" từ màn hình xác thực khuôn mặt -> Về màn hình nhập mã
     if (backToMemberIdInputButton) {
         backToMemberIdInputButton.addEventListener('click', () => {
             showScreen(memberIdInputScreen);
@@ -193,14 +232,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Nút "Quay lại" từ màn hình xem thành viên -> Về màn hình chính
     if (backToMainFromViewMembersButton) {
         backToMainFromViewMembersButton.addEventListener('click', () => {
             showScreen(mainMenuScreen);
         });
     }
 
-    // Nút "Quay lại" từ màn hình đăng ký thành viên -> Về màn hình chính
     if (backToMainFromRegisterButton) {
         backToMainFromRegisterButton.addEventListener('click', () => {
             showScreen(mainMenuScreen);
@@ -209,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Logic cho màn hình Nhập Mã Thành viên ---
 
-    // Xử lý khi nhấn nút "Kiểm tra"
     if (submitMemberIdButton) {
         submitMemberIdButton.addEventListener('click', () => {
             const memberId = memberIdInput.value.trim();
@@ -221,21 +257,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log('Mã thành viên đã nhập:', memberId);
 
-            if (memberId.length === 5 && !isNaN(memberId)) {
-                showMemberIdMessage('Mã thành viên hợp lệ!', 'success');
-                displayMemberId.textContent = memberId;
-                showScreen(faceRecognitionScreen);
-            } else {
-                showMemberIdMessage('Mã thành viên không hợp lệ. Vui lòng thử lại.', 'error');
-                setTimeout(() => {
-                    memberIdMessageDiv.textContent = '';
-                    memberIdMessageDiv.className = 'message';
-                }, 5000);
-            }
+            // Lưu ý: Logic kiểm tra mã thành viên hợp lệ (ví dụ: 5 chữ số)
+            // nên được thực hiện ở Backend để đảm bảo an toàn và nhất quán.
+            // Phần kiểm tra ở frontend này chỉ mang tính tạm thời.
+
+            // Giả lập kiểm tra ở frontend để chuyển màn hình nhanh
+            if (memberId.length >= 1) { // Chỉ cần có nhập gì đó là chuyển màn hình
+                 showMemberIdMessage('Đang chuyển đến xác thực khuôn mặt...', 'success');
+                 displayMemberId.textContent = memberId;
+                 showScreen(faceRecognitionScreen);
+               } else {
+                 showMemberIdMessage('Vui lòng nhập mã thành viên.', 'error');
+                 setTimeout(() => {
+                     memberIdMessageDiv.textContent = '';
+                     memberIdMessageDiv.className = 'message';
+                 }, 5000);
+               }
         });
     }
 
-    // Thêm chức năng nhấn Enter để kiểm tra mã thành viên
     if (memberIdInput) {
         memberIdInput.addEventListener('keypress', (event) => {
             if (event.key === 'Enter') {
@@ -256,10 +296,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // TODO: Tại đây, bạn sẽ gửi dữ liệu đăng ký này tới backend
+            // TODO: Gửi dữ liệu đăng ký này tới backend-DB
             console.log('Dữ liệu đăng ký:', { name, email, phone });
-            alert(`Yêu cầu đăng ký của ${name} đã được gửi! (Chức năng này sẽ kết nối backend sau)`);
-            showScreen(mainMenuScreen); // Quay về màn hình chính sau khi gửi
+            alert(`Yêu cầu đăng ký của ${name} đã được gửi! (Chức năng này sẽ kết nối backend-DB sau)`);
+            showScreen(mainMenuScreen);
         });
     }
 

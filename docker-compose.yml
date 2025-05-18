@@ -5,16 +5,36 @@ services:
   # Dịch vụ Frontend (GUI-Cổng)
   frontend:
     build: ./frontend             # Docker sẽ tìm Dockerfile trong thư mục ./frontend
+    container_name: ai-lib-frontend
     ports:
-      - "8082:80"                 # <--- CHỈNH SỬA Ở ĐÂY
-                                  # '8082' là cổng trên máy tính của bạn
-                                  # '80' là cổng bên trong container Nginx
+      - "8082:80"                 # Ánh xạ cổng 8082 trên host tới cổng 80 của Nginx trong container
+                                  # Frontend sẽ truy cập Backend bằng tên dịch vụ 'backend' và cổng nội bộ
     volumes:
-      - ./frontend/public:/usr/share/nginx/html
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/public:/usr/share/nginx/html # Gắn thư mục public vào Nginx
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf # Gắn file cấu hình Nginx
+    depends_on:
+      - backend               # Frontend phụ thuộc vào backend, đảm bảo backend khởi động trước
     networks:
-      - app_network
+      - app_network               # Định nghĩa một network riêng cho ứng dụng của bạn
+
+  # Dịch vụ Backend (Backend-DB - thư mục 'app' của bạn)
+  backend:
+    build:
+      context: ./app              # Docker sẽ tìm Dockerfile trong thư mục ./app (Backend của bạn)
+                                  # Đảm bảo file Dockerfile và requirements.txt nằm trong thư mục ./app
+    container_name: ai-lib-backend
+    ports:
+      - "8000:8000"               # Ánh xạ cổng 8000 trên host tới cổng 8000 của Backend trong container
+                                  # (Giả định Backend chạy trên cổng 8000. Cần khớp với lệnh CMD trong Dockerfile)
+    volumes:
+      - ./app:/app                # Gắn toàn bộ thư mục 'app' vào thư mục làm việc /app trong container
+                                  # Giúp bạn chỉnh sửa code Backend mà không cần build lại image
+    # Nếu Backend của bạn có biến môi trường riêng (ví dụ: kết nối DB), bạn có thể thêm ở đây
+    # env_file:
+    #   - .env # Sử dụng file .env ở thư mục gốc hoặc tạo file .env riêng trong thư mục ./app
+    networks:
+      - app_network               # Tham gia cùng network với frontend
 
 networks:
-  app_network:
+  app_network:                    # Định nghĩa network dùng chung cho các dịch vụ
     driver: bridge
