@@ -1,0 +1,141 @@
+/* src/components/forms/Form.module.css */
+
+.formContainer {
+  padding: 30px 35px;
+  max-width: 650px; /* Slightly adjusted max-width */
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 40px; /* Space below the form */
+  background-color: #112240; /* Darker blue for form background (lighter than page, darker than inputs) */
+  color: #ccd6f6;           /* Default text color inside the form */
+  border-radius: 6px;      /* Slightly less rounded corners */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+  border: 1px solid #001e3c; /* Subtle border to define the form box */
+}
+
+.formTitle {
+  font-size: 1.9em; /* Adjusted title size */
+  font-weight: 600;
+  color: #64ffda;           /* Cyan for the form title */
+  text-align: center;
+  margin-top: 0; /* Remove default h2 margin if it's the first element */
+  margin-bottom: 35px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #233554; /* Darker border for title underline */
+}
+
+.formGroup {
+  margin-bottom: 22px; /* Adjusted spacing */
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 500;
+  color: #8892b0;           /* Muted cyan/light blue for labels */
+  font-size: 0.95em;
+}
+
+.formGroup input[type="text"],
+.formGroup input[type="email"],
+.formGroup select {
+  width: 100%;
+  padding: 13px 16px;
+  background-color: #0a192f; /* Very dark blue for input background (same as page or slightly different) */
+  border: 1px solid #233554;   /* Darker border for inputs */
+  color: #ccd6f6;               /* Light text color for input content */
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 1em;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  border-color: #64ffda;       /* Cyan border on focus */
+  background-color: #172a45;   /* Slightly lighter background on input focus */
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.15); /* Subtle cyan glow */
+}
+
+/* Placeholder text styling for dark inputs */
+.formGroup input::placeholder {
+  color: #566a8f;
+  opacity: 1;
+}
+.formGroup input:-ms-input-placeholder {
+  color: #566a8f;
+}
+.formGroup input::-ms-input-placeholder {
+  color: #566a8f;
+}
+
+.submitButton {
+  background-color: #64ffda; /* Cyan for button background */
+  color: #0a192f;           /* Dark blue text for contrast on cyan button */
+  padding: 13px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.05em;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+  margin-top: 15px;
+  text-transform: uppercase; /* Optional: make button text uppercase */
+  letter-spacing: 0.5px;   /* Optional: slight letter spacing */
+}
+
+.submitButton:hover {
+  background-color: #52d3bc; /* Slightly darker/muted cyan on hover */
+  transform: translateY(-1px); /* Slight lift effect on hover */
+}
+
+.submitButton:active {
+  transform: translateY(0px); /* Press down effect */
+}
+
+.submitButton:disabled {
+  background-color: #233554; /* Darker, muted for disabled */
+  color: #495670;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.errorText {
+  color: #ff7991; /* Lighter red/pink for error text */
+  background-color: rgba(255, 121, 145, 0.1);
+  border: 1px solid rgba(255, 121, 145, 0.4);
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+/* Styles for file inputs, if you use them */
+.formGroup input[type="file"] {
+  padding: 10px; /* Adjust padding as needed */
+  color: #8892b0;
+  background-color: #0a192f;
+  border: 1px solid #233554;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.formGroup input[type="file"]::file-selector-button {
+  background-color: #64ffda;
+  color: #0a192f;
+  border: none;
+  padding: 10px 15px; /* Match general input padding */
+  border-radius: 3px; /* Slight rounding for the button part */
+  cursor: pointer;
+  margin-right: 15px;
+  font-weight: 500;
+  transition: background-color 0.2s ease-in-out;
+}
+.formGroup input[type="file"]::file-selector-button:hover {
+  background-color: #52d3bc;
+}
