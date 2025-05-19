@@ -1,11 +1,9 @@
 # D:\AI-Lib\app\Dockerfile
 
 # Sử dụng một image Python cơ bản
-# Chọn phiên bản Python phù hợp với dự án của bạn (ví dụ: python:3.9-slim-buster)
 FROM python:3.9-slim-buster
 
-# Cài đặt các gói hệ thống cần thiết cho việc biên dịch mysqlclient (giữ lại nếu cần)
-# và thêm sqlite3
+# Cài đặt các gói hệ thống cần thiết (bao gồm sqlite3)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
@@ -18,22 +16,21 @@ RUN apt-get update && \
 WORKDIR /usr/src/app
 
 # Sao chép file requirements.txt vào thư mục làm việc
-COPY requirements.txt .
+COPY requirements.txt ./
 
 # Cài đặt các thư viện Python
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Sao chép toàn bộ mã nguồn từ thư mục hiện tại trên host (D:\AI-Lib\app)
 # vào thư mục làm việc trong container (/usr/src/app)
-# Dựa trên cấu trúc file của bạn, code nguồn (main.py, __init__.py, các thư mục con)
-# nằm trực tiếp trong D:\AI-Lib\app
+# Điều này bao gồm main.py, initial_data.py, và các thư mục con (core, db, routers, schemas, crud)
 COPY . .
 
 # Mở cổng 8000 (cổng mà FastAPI/Uvicorn lắng nghe)
 EXPOSE 8000
 
 # Lệnh để chạy ứng dụng FastAPI
-# Vì main.py và __init__.py nằm trực tiếp trong WORKDIR (/usr/src/app),
+# Vì main.py nằm trực tiếp trong WORKDIR (/usr/src/app),
 # Python sẽ coi /usr/src/app là package gốc.
 # Do đó, lệnh import đúng là main:app
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
