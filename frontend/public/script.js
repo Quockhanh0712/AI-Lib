@@ -285,11 +285,12 @@ document.addEventListener('DOMContentLoaded', () => {
                      } else {
                          let html = '<h3>Người dùng đang ở Thư viện:</h3><ul>';
                          result.forEach(item => { // result là mảng các UserInLibraryResponse
-                             // SỬA LỖI: Truy cập member_code và full_name thông qua user_session_owner
-                             const memberCode = item.user_session_owner ? item.user_session_owner.member_code : 'N/A';
+                             // Lấy thông tin Tên và Thời gian vào
                              const fullName = item.user_session_owner ? item.user_session_owner.full_name : 'N/A';
                              const entryTime = item.entry_time ? new Date(item.entry_time).toLocaleString() : 'N/A';
-                             html += `<li>Mã: ${memberCode} - Tên: ${fullName} - Vào lúc: ${entryTime}</li>`;
+
+                             // SỬA ĐỔI: Bỏ phần hiển thị Mã thành viên
+                             html += `<li>Tên: ${fullName} - Vào lúc: ${entryTime}</li>`;
                          });
                          html += '</ul>';
                          usersInLibraryListDiv.innerHTML = html;

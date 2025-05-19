@@ -9,17 +9,23 @@ body {
     min-height: 100vh;
     margin: 0;
     background: linear-gradient(to right, #6a11cb, #2575fc); /* Nền gradient đẹp mắt */
-    color: #f0f2f5; /* Màu chữ sáng cho nền tối */
-    overflow: hidden; /* Tránh scrollbar nếu không cần thiết */
+    color: #333; /* Đặt màu chữ mặc định cho body là xám đậm */
+    overflow-x: hidden; /* **QUAN TRỌNG:** Ngăn chặn scroll ngang */
+    padding: 20px 0; /* Thêm padding trên dưới cho body để tránh nội dung dính sát mép */
+    box-sizing: border-box;
 }
 
 /* Ẩn/hiện các màn hình */
 .screen {
     display: none; /* Mặc định ẩn tất cả các màn hình */
     width: 100%;
-    height: 100vh;
+    min-height: calc(100vh - 40px); /* Chiều cao tối thiểu, trừ đi padding của body */
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* Căn nội dung lên trên thay vì giữa */
+    /* **QUAN TRỌNG:** Thêm padding ngang để tránh nội dung dính sát lề */
+    padding: 0 15px; /* Thêm padding 15px ở hai bên */
+    box-sizing: border-box; /* Đảm bảo padding không làm tăng width */
+    overflow-y: auto; /* Cho phép cuộn dọc nếu nội dung quá dài */
 }
 
 .screen:not(.hidden) {
@@ -29,14 +35,19 @@ body {
 /* Hiệu ứng mờ dần khi tải trang cho container */
 .container {
     text-align: center;
-    padding: 40px;
-    background-color: rgba(255, 255, 255, 0.95);
+    padding: 25px; /* Giảm nhẹ padding */
+    background-color: #ffffff; /* Nền trắng tinh khiết cho container */
     border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    width: 90%;
-    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    width: 100%; /* Sử dụng 100% width */
+    max-width: 450px; /* Giới hạn chiều rộng tối đa nhỏ hơn */
     transform: translateY(-20px);
     animation: fadeIn 1s ease-out forwards;
+    color: #333; /* Đặt màu chữ mặc định cho container là xám đậm */
+    /* **QUAN TRỌNG:** Đảm bảo padding không làm tăng kích thước tổng thể */
+    box-sizing: border-box;
+    /* **QUAN TRỌNG:** Thêm margin tự động hai bên để căn giữa */
+    margin: 15px auto; /* Giảm margin trên dưới và tự động căn giữa */
 }
 
 @keyframes fadeIn {
@@ -52,215 +63,228 @@ body {
 
 
 h1 {
-    color: #0056b3;
-    margin-bottom: 25px;
-    font-size: 2.5em;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    color: #1a237e; /* Màu xanh navy đậm cho tiêu đề chính */
+    margin-bottom: 15px; /* Giảm nhẹ margin dưới */
+    font-size: 1.8em; /* Giảm kích thước tiêu đề chính */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 h1 .fas { /* Style cho icon trong tiêu đề */
-    margin-right: 10px;
-    color: #2575fc; /* Màu icon */
+    margin-right: 6px; /* Giảm nhẹ margin icon */
+    color: #3f51b5; /* Màu icon xanh */
 }
 
 p {
-    font-size: 1.2em;
-    line-height: 1.6;
-    margin-bottom: 40px;
-    color: #555;
+    font-size: 0.9em; /* Giảm nhẹ kích thước đoạn text mô tả chung */
+    line-height: 1.4; /* Giảm nhẹ line height */
+    margin-bottom: 25px; /* Giảm nhẹ margin dưới */
+    color: #555; /* Màu xám cho đoạn text chung */
 }
 
 .buttons {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px; /* Giảm nhẹ khoảng cách giữa các nút */
 }
 
 .buttons button {
     display: block;
     width: 100%;
-    padding: 18px 25px;
-    font-size: 1.3em;
+    padding: 12px 18px; /* Giảm padding nút */
+    font-size: 1em; /* Giảm kích thước chữ nút */
     cursor: pointer;
     border: none;
     border-radius: 8px;
     transition: all 0.3s ease;
     font-weight: bold;
     letter-spacing: 0.5px;
+    color: white; /* Màu chữ trắng cho các nút */
+    box-sizing: border-box; /* Đảm bảo padding không làm tăng width */
 }
 
 .buttons button .fas { /* Style cho icon trong nút */
-    margin-right: 10px;
+    margin-right: 6px; /* Giảm nhẹ margin icon */
 }
 
 .main-button {
-    background-color: #007bff;
-    color: white;
-    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+    background-color: #4caf50; /* Màu xanh lá cây tươi */
+    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
 }
 
 .main-button:hover {
-    background-color: #0056b3;
+    background-color: #388e3c; /* Màu xanh lá cây đậm hơn khi hover */
     transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(0, 123, 255, 0.4);
+    box-shadow: 0 6px 15px rgba(76, 175, 80, 0.4);
 }
 
 .buttons button:not(.main-button) {
-    background-color: #6c757d;
-    color: white;
-    box-shadow: 0 4px 10px rgba(108, 117, 125, 0.2);
+    background-color: #795548; /* Màu nâu đất */
+    box-shadow: 0 4px 10px rgba(121, 85, 72, 0.2);
 }
 
 .buttons button:not(.main-button):hover {
-    background-color: #5a6268;
+    background-color: #5d4037; /* Màu nâu đất đậm hơn khi hover */
     transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(108, 117, 125, 0.3);
+    box-shadow: 0 6px 15px rgba(121, 85, 72, 0.3);
 }
 
 /* Input Group */
 .input-group {
     display: flex;
-    gap: 10px;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
+    gap: 6px; /* Giảm nhẹ khoảng cách giữa input và button */
+    margin-bottom: 15px; /* Giảm nhẹ margin dưới */
+    flex-wrap: wrap; /* Vẫn cho phép xuống dòng */
 }
 
 .input-group input {
     flex-grow: 1;
-    padding: 15px;
-    font-size: 1.2em;
-    border: 2px solid #ddd;
+    padding: 10px; /* Giảm padding input */
+    font-size: 0.95em; /* Giảm kích thước font input */
+    border: 2px solid #ccc; /* Viền xám nhạt */
     border-radius: 8px;
     outline: none;
     transition: border-color 0.3s ease;
-    color: #333; /* Đảm bảo màu chữ trong input dễ đọc */
+    color: #333; /* Màu chữ trong input là xám đậm */
+    background-color: #fff; /* Nền trắng cho input */
+    box-sizing: border-box; /* Đảm bảo padding không làm tăng width */
+    min-width: 120px; /* Giảm min-width */
 }
 
 .input-group input:focus {
-    border-color: #007bff;
+    border-color: #4caf50; /* Viền xanh lá khi focus */
 }
 
 .input-group button {
-    padding: 15px 25px;
-    font-size: 1.2em;
-    background-color: #28a745;
-    color: white;
+    padding: 10px 18px; /* Giảm padding button */
+    font-size: 0.95em; /* Giảm kích thước font button */
+    background-color: #fbc02d; /* Màu vàng đậm */
+    color: #333; /* Màu chữ xám đậm cho nút */
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.3s ease;
     flex-shrink: 0;
+    box-sizing: border-box; /* Đảm bảo padding không làm tăng width */
 }
 
 .input-group button:hover {
-    background-color: #218838;
+    background-color: #f9a825; /* Màu vàng đậm hơn khi hover */
     transform: translateY(-2px);
 }
 
 /* Messages */
 .message {
-    margin-top: 15px;
-    padding: 10px;
+    margin-top: 10px; /* Giảm margin */
+    padding: 8px; /* Giảm padding */
     border-radius: 5px;
-    font-size: 1.1em;
-    min-height: 20px;
+    font-size: 0.9em; /* Giảm font size message */
+    min-height: 18px; /* Giảm min-height */
 }
 
 .message.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background-color: #e8f5e9; /* Nền xanh lá rất nhạt */
+    color: #2e7d32; /* Chữ xanh lá đậm */
+    border: 1px solid #a5d6a7;
 }
 
 .message.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: #ffebee; /* Nền đỏ rất nhạt */
+    color: #c62828; /* Chữ đỏ đậm */
+    border: 1px solid #ef9a9a;
 }
+
+.message.info { /* Style cho thông báo info */
+    background-color: #e3f2fd; /* Nền xanh dương rất nhạt */
+    color: #1565c0; /* Chữ xanh dương đậm */
+    border: 1px solid #90caf9;
+}
+
 
 /* Secondary Button (Quay lại) */
 .secondary-button {
-    background-color: #f0ad4e;
-    color: white;
-    box-shadow: 0 4px 10px rgba(240, 173, 78, 0.2);
-    width: auto;
-    padding: 10px 20px;
-    margin-top: 20px;
+    background-color: #ff9800; /* Màu cam */
+    color: white; /* Chữ trắng */
+    box-shadow: 0 4px 10px rgba(255, 152, 0, 0.2);
+    width: auto; /* Cho phép chiều rộng tự động */
+    padding: 8px 18px; /* Giảm padding */
+    margin-top: 15px; /* Giảm margin */
     align-self: center; /* Căn giữa nếu là flex item */
+    display: inline-block; /* Hiển thị như block để có margin top/bottom, nhưng width tự động */
+    box-sizing: border-box; /* Đảm bảo padding không làm tăng width */
 }
 
 .secondary-button:hover {
-    background-color: #ec971f;
+    background-color: #f57c00; /* Màu cam đậm hơn khi hover */
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(240, 173, 78, 0.3);
+    box-shadow: 0 6px 15px rgba(255, 152, 0, 0.3);
 }
 
 .secondary-button .fas {
-    margin-right: 8px;
+    margin-right: 6px; /* Giảm margin */
 }
 
-/* Camera Feed Placeholder */
+/* Camera Feed Placeholder (nếu dùng) */
 .camera-feed-placeholder {
     width: 100%;
-    max-width: 400px;
-    height: 250px;
-    background-color: #eee;
-    border: 2px dashed #ccc;
+    max-width: 350px; /* Giảm max-width */
+    height: 200px; /* Giảm height */
+    background-color: #e0e0e0; /* Nền xám nhạt */
+    border: 2px dashed #9e9e9e; /* Viền xám */
     border-radius: 10px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    color: #999;
-    font-size: 1.1em;
-    margin: 20px auto;
+    color: #616161; /* Màu xám đậm cho chữ */
+    font-size: 0.9em; /* Giảm font size */
+    margin: 15px auto; /* Giảm margin */
+    box-sizing: border-box;
 }
 
 .camera-feed-placeholder .fas {
-    font-size: 5em; /* Kích thước icon lớn */
-    margin-bottom: 10px;
+    font-size: 3em; /* Giảm kích thước icon */
+    margin-bottom: 6px; /* Giảm margin */
 }
-/* Thêm vào cuối file style.css */
 
 /* Style cho thẻ video webcam */
 #webcamFeed {
     width: 100%;
-    max-width: 400px; /* Giới hạn chiều rộng của video */
+    max-width: 350px; /* Giảm max-width */
     height: auto; /* Chiều cao tự động để giữ tỷ lệ */
-    border: 2px solid #007bff;
+    border: 2px solid #4caf50; /* Viền xanh lá */
     border-radius: 10px;
-    margin: 20px auto;
+    margin: 15px auto; /* Giảm margin */
     display: block; /* Để căn giữa dễ dàng */
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     transform: scaleX(-1); /* Lật ngang video để trông như gương */
+    box-sizing: border-box;
 }
 
 /* Style cho nút chụp ảnh */
 .camera-button {
-    background-color: #ffc107; /* Màu vàng */
-    color: #333;
-    box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
-    margin-bottom: 20px; /* Khoảng cách dưới nút */
+    background-color: #03a9f4; /* Màu xanh dương */
+    color: white; /* Chữ trắng */
+    box-shadow: 0 4px 10px rgba(3, 169, 244, 0.3);
+    margin-bottom: 15px; /* Giảm margin dưới nút */
 }
 
 .camera-button:hover {
-    background-color: #e0a800;
+    background-color: #0288d1; /* Màu xanh dương đậm hơn khi hover */
     transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(255, 193, 7, 0.4);
+    box-shadow: 0 6px 15px rgba(3, 169, 244, 0.4);
 }
-/* Thêm vào cuối file style.css */
 
 /* Style cho danh sách thành viên */
 .member-list-placeholder {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
+    background-color: #ffffff; /* Nền trắng */
+    border: 1px solid #e0e0e0; /* Viền xám nhạt */
     border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 25px;
+    padding: 12px; /* Giảm padding */
+    margin-bottom: 15px; /* Giảm margin */
     text-align: left;
-    color: #333;
-    max-height: 250px; /* Giới hạn chiều cao để có scroll nếu dài */
+    max-height: 180px; /* Giảm nhẹ max-height */
     overflow-y: auto; /* Cho phép scroll dọc */
+    box-sizing: border-box;
 }
 
 .member-list-placeholder ul {
@@ -269,57 +293,188 @@ p {
     margin: 0;
 }
 
-.member-list-placeholder li {
-    padding: 10px 0;
-    border-bottom: 1px solid #dee2e6;
+/* Quy tắc CỤ THỂ hơn cho các mục danh sách (li) bên trong .member-list-placeholder */
+.member-list-placeholder ul li {
+    color: #333; /* Đặt màu xám đậm cho chữ */
+    padding: 6px 0; /* Giảm padding */
+    border-bottom: 1px solid #eeeeee; /* Đường kẻ phân cách rất nhạt */
     display: flex;
     align-items: center;
-    font-size: 1.1em;
+    font-size: 0.9em; /* Giảm font size */
 }
 
-.member-list-placeholder li:last-child {
-    border-bottom: none;
+.member-list-placeholder ul li:last-child {
+    border-bottom: none; /* Bỏ đường kẻ cho mục cuối */
 }
 
-.member-list-placeholder li .fas {
-    margin-right: 10px;
-    color: #007bff;
+.member-list-placeholder ul li .fas {
+    margin-right: 6px; /* Giảm margin */
+    color: #4caf50; /* Màu icon xanh lá */
 }
+
+/* Style cho tiêu đề H3 bên trong placeholder */
+.member-list-placeholder h3 {
+    color: #555; /* Màu hơi khác cho tiêu đề */
+    margin-top: 0;
+    margin-bottom: 8px; /* Giảm margin */
+    text-align: center;
+    font-size: 1em; /* Giảm font size */
+}
+
+/* Style cho đoạn text "Đang tải danh sách..." hoặc "Không có người dùng..." */
+.member-list-placeholder p {
+    color: #616161; /* Màu xám cho các thông báo */
+    text-align: center;
+    font-style: italic;
+    font-size: 0.8em; /* Giảm font size */
+}
+
+/* Quy tắc cho thông báo lỗi bên trong placeholder */
+.member-list-placeholder p.error {
+    color: #d32f2f; /* Màu đỏ đậm cho lỗi */
+    font-weight: bold;
+}
+
 
 /* Style cho Form Đăng ký */
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 12px; /* Giảm margin dưới form group */
     text-align: left;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 4px; /* Giảm margin dưới label */
     font-weight: 600;
-    color: #555;
-    font-size: 1.1em;
+    color: #555; /* Màu xám cho label */
+    font-size: 0.9em; /* Giảm font size label */
 }
 
 .form-group input[type="text"],
 .form-group input[type="email"],
-.form-group input[type="tel"] {
-    width: calc(100% - 30px); /* Kích thước phù hợp với padding */
-    padding: 15px;
-    font-size: 1.2em;
-    border: 2px solid #ddd;
+.form-group input[type="tel"],
+.form-group input[type="file"] { /* Thêm input type file */
+    width: 100%; /* Sử dụng 100% width */
+    padding: 10px; /* Giảm padding input */
+    font-size: 0.95em; /* Giảm font size input */
+    border: 2px solid #ccc; /* Viền xám nhạt */
     border-radius: 8px;
     outline: none;
     transition: border-color 0.3s ease;
-    color: #333;
-    background-color: #fff;
+    color: #333; /* Màu chữ trong input là xám đậm */
+    background-color: #fff; /* Nền trắng cho input */
+    box-sizing: border-box; /* **QUAN TRỌNG:** Đảm bảo padding không làm tăng kích thước tổng thể */
 }
 
 .form-group input:focus {
-    border-color: #007bff;
+    border-color: #4caf50; /* Viền xanh lá khi focus */
 }
 
 /* Điều chỉnh nút Submit cho form */
 #submitRegistration {
-    margin-top: 20px;
+    margin-top: 12px; /* Giảm margin trên nút submit */
     width: 100%; /* Nút submit rộng bằng form */
+    background-color: #fbc02d; /* Màu vàng đậm */
+    color: #333; /* Chữ xám đậm */
+    box-shadow: 0 4px 10px rgba(251, 192, 45, 0.3);
+    padding: 12px 18px; /* Giảm padding nút */
+    font-size: 1em; /* Giảm font size nút */
 }
+
+#submitRegistration:hover {
+     background-color: #f9a825; /* Màu vàng đậm hơn khi hover */
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(251, 192, 45, 0.4);
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .container {
+        padding: 15px; /* Giảm padding trên màn hình nhỏ */
+        width: 100%; /* Đảm bảo chiếm 100% width (trừ padding của screen) */
+        margin: 10px auto; /* Giảm margin trên dưới */
+        max-width: 100%; /* Cho phép container co giãn tối đa theo screen padding */
+    }
+
+    h1 {
+        font-size: 1.6em; /* Giảm font size */
+        margin-bottom: 10px; /* Giảm margin */
+    }
+
+    p {
+        font-size: 0.85em; /* Giảm font size */
+        margin-bottom: 10px; /* Giảm margin */
+    }
+
+    .buttons button {
+        padding: 10px 12px; /* Giảm padding */
+        font-size: 0.9em; /* Giảm font size */
+    }
+
+    .input-group {
+        flex-direction: column;
+        gap: 8px; /* Giảm gap */
+        margin-bottom: 10px; /* Giảm margin */
+    }
+
+    .input-group input,
+    .input-group button {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px; /* Giảm padding */
+        font-size: 0.85em; /* Giảm font size */
+    }
+
+    .form-group {
+        margin-bottom: 8px; /* Giảm margin */
+    }
+
+    .form-group label {
+        font-size: 0.8em; /* Giảm font size */
+        margin-bottom: 3px; /* Giảm margin */
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="tel"],
+    .form-group input[type="file"] {
+         width: 100%;
+         padding: 8px; /* Giảm padding */
+         font-size: 0.85em; /* Giảm font size */
+         box-sizing: border-box;
+    }
+
+    .member-list-placeholder {
+        padding: 8px; /* Giảm padding */
+        margin-bottom: 10px; /* Giảm margin */
+        max-height: 150px; /* Giảm max-height */
+    }
+
+    .member-list-placeholder ul li {
+        font-size: 0.85em; /* Giảm font size */
+        padding: 5px 0; /* Giảm padding */
+    }
+
+     .member-list-placeholder h3 {
+        font-size: 0.9em; /* Giảm font size */
+        margin-bottom: 6px; /* Giảm margin */
+    }
+
+    .member-list-placeholder p {
+        font-size: 0.75em; /* Giảm font size */
+    }
+
+    .secondary-button {
+        padding: 6px 12px; /* Giảm padding */
+        font-size: 0.9em; /* Giảm font size */
+        margin-top: 10px; /* Giảm margin */
+    }
+
+     #submitRegistration {
+        padding: 10px 12px; /* Giảm padding */
+        font-size: 0.9em; /* Giảm font size */
+        margin-top: 10px; /* Giảm margin */
+    }
+}
+
