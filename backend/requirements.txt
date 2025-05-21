@@ -1,0 +1,14 @@
+# D:\AI-Lib\app\requirements.txt
+
+fastapi
+uvicorn[standard]
+sqlalchemy
+PyMySQL
+pydantic[email]
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]
+itsdangerous
+pydantic-settings
+python-multipart
+pytz

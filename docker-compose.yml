@@ -1,40 +1,77 @@
 # docker-compose.yml
-version: '3.8'
+# Đặt file này ở thư mục gốc của dự án (AI-Lib/)
+
+version: '3.8' # Phiên bản Docker Compose
 
 services:
-  # Dịch vụ Frontend (GUI-Cổng)
-  frontend:
-    build: ./frontend             # Docker sẽ tìm Dockerfile trong thư mục ./frontend
-    container_name: ai-lib-frontend
+  # Dịch vụ Database (MySQL)
+  db:
+    image: mysql:8.0
     ports:
-      - "8082:80"                 # Ánh xạ cổng 8082 trên host tới cổng 80 của Nginx trong container
-                                  # Frontend sẽ truy cập Backend bằng tên dịch vụ 'backend' và cổng nội bộ
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: lib_ai
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root_password_for_dev
+      TZ: UTC # <<< THÊM DÒNG NÀY ĐỂ ĐẶT MÚI GIỜ CONTAINER LÀ UTC
     volumes:
-      - ./frontend/public:/usr/share/nginx/html # Gắn thư mục public vào Nginx
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf # Gắn file cấu hình Nginx
-    depends_on:
-      - backend               # Frontend phụ thuộc vào backend, đảm bảo backend khởi động trước
-    networks:
-      - app_network               # Định nghĩa một network riêng cho ứng dụng của bạn
+      - db_data:/var/lib/mysql
+      - ./db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # Dịch vụ Backend (Backend-DB - thư mục 'app' của bạn)
+  # Dịch vụ Backend
   backend:
-    build:
-      context: ./app              # Docker sẽ tìm Dockerfile trong thư mục ./app (Backend của bạn)
-                                  # Đảm bảo file Dockerfile và requirements.txt nằm trong thư mục ./app
-    container_name: ai-lib-backend
+    build: ./backend # Đường dẫn đến thư mục chứa Dockerfile của backend
     ports:
-      - "8000:8000"               # Ánh xạ cổng 8000 trên host tới cổng 8000 của Backend trong container
-                                  # (Giả định Backend chạy trên cổng 8000. Cần khớp với lệnh CMD trong Dockerfile)
+      - "8000:8000" # Ánh xạ cổng API backend
+    environment:
+      # ĐÃ SỬA: Thêm ?charset=utf8mb4 vào cuối chuỗi kết nối để đảm bảo encoding đúng
+      environment:
+      DATABASE_URL: mysql+pymysql://user:password@db:3306/lib_ai?charset=utf8mb4
+      # Các biến MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE không cần thiết ở đây nữa
+      # vì DATABASE_URL đã được định nghĩa đầy đủ.
+      # AI_MODEL_PATH: /app/models/face_recognition_model.pth
     volumes:
-      - ./app:/app                # Gắn toàn bộ thư mục 'app' vào thư mục làm việc /app trong container
-                                  # Giúp bạn chỉnh sửa code Backend mà không cần build lại image
-    # Nếu Backend của bạn có biến môi trường riêng (ví dụ: kết nối DB), bạn có thể thêm ở đây
-    # env_file:
-    #   - .env # Sử dụng file .env ở thư mục gốc hoặc tạo file .env riêng trong thư mục ./app
-    networks:
-      - app_network               # Tham gia cùng network với frontend
+      # Ánh xạ volume cho dữ liệu backend (nếu backend lưu file ảnh, model, v.v.)
+      - backend_data:/usr/src/app/data
+      # Nếu bạn muốn live-reload code backend khi phát triển, có thể ánh xạ thư mục code:
+      # - ./backend:/usr/src/app
+    depends_on:
+      db: # Backend phụ thuộc vào database
+        condition: service_healthy # Chỉ khởi động backend khi database sẵn sàng
 
-networks:
-  app_network:                    # Định nghĩa network dùng chung cho các dịch vụ
-    driver: bridge
+
+  # Dịch vụ Frontend Người dùng (Cổng máy) - PHIÊN BẢN REACT
+  frontend-user:
+    build:
+      context: ./frontend-user-react # Đường dẫn đến thư mục React mới
+      args: # <<< ĐÃ SỬA LỖI THỤT LỀ Ở ĐÂY
+        VITE_BACKEND_API_URL: http://localhost:8000/machine # ĐÃ SỬA: Sử dụng localhost
+    ports:
+      - "8082:80" # Ánh xạ cổng cho frontend user
+    depends_on:
+      - backend # Frontend user phụ thuộc vào backend để gọi API
+
+  # Dịch vụ Frontend Admin
+  frontend-admin:
+    build:
+      context: ./frontend-admin
+      args: # <<< ĐÃ SỬA LỖI THỤT LỀ Ở ĐÂY
+        VITE_BACKEND_API_URL: http://localhost:8000/machine # ĐÃ SỬA: Sử dụng localhost
+    ports:
+      - "8083:80"
+    depends_on:
+      - backend
+
+# Định nghĩa các Volumes để lưu trữ dữ liệu bền vững
+volumes:
+  db_data: # Volume cho dữ liệu database MySQL
+  backend_data: # Volume cho dữ liệu backend (nếu có)
+  # frontend_user_data: # Volume cho frontend user (nếu cần)
+  # frontend_admin_data: # Volume cho frontend admin (nếu cần)
