@@ -1,0 +1,16 @@
+# AIService/requirements.txt
+fastapi
+uvicorn[standard]
+sqlalchemy
+PyMySQL
+pydantic
+python-dotenv
+opencv-python
+numpy
+tensorflow
+tf-keras
+deepface
+mtcnn
+cryptography
+httpx # This was for the Admin backend to call AI service, AI service itself might not need it
+python-multipart # <<< ADD THIS LINE

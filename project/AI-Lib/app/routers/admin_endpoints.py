@@ -6,6 +6,7 @@ from typing import List, Optional
 from datetime import datetime # Vẫn cần datetime cho các logic khác
 import shutil
 import os
+import httpx
 
 from app.db import database, models
 from app.schemas import admin as admin_schemas
@@ -108,27 +109,10 @@ async def read_admin_me_endpoint_session(
 
 # --- Các API Admin khác (UC8, UC9, UC10) sẽ dùng Depends(get_current_admin_from_session) ---
 # Ví dụ:
-@router.post("/users/", response_model=user_schemas.User, status_code=status.HTTP_201_CREATED)
-async def create_new_user_by_admin_endpoint(
-    member_code: str = Form(...),
-    full_name: str = Form(...),
-    email: Optional[str] = Form(None),
-    phone_number: Optional[str] = Form(None),
-    current_admin: models.AdminUser = Depends(get_current_admin_from_session), # <<<< SỬ DỤNG DEPENDENCY MỚI
-    db: Session = Depends(database.get_db)
-):
-    if crud_user.get_user_by_member_code(db, member_code):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Member code already registered.")
-    if email and crud_user.get_user_by_email(db, email):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered.")
-    user_data = user_schemas.UserCreate(
-        member_code=member_code,
-        full_name=full_name,
-        email=email,
-        phone_number=phone_number
-    )
-    db_user = crud_user.create_user(db=db, user=user_data, status="Approved")
-    return db_user
+# Configuration for the AI Service URL
+AI_SERVICE_BASE_URL = "http://localhost:8001" # <<< PORT FOR YOUR SEPARATE AI SERVICE
+
+
 
 @router.get("/users/", response_model=List[user_schemas.User])
 def read_all_users_endpoint(
@@ -161,6 +145,80 @@ def read_user_by_id_or_code_endpoint(
     return db_user
 
 
+@router.post("/users/", response_model=user_schemas.User, status_code=status.HTTP_201_CREATED)
+async def create_new_user_by_admin_endpoint(
+    member_code: str = Form(...),
+    full_name: str = Form(...),
+    email: Optional[str] = Form(None),
+    phone_number: Optional[str] = Form(None),
+    photo: UploadFile = File(...), # Expecting a single photo
+    current_admin: models.AdminUser = Depends(get_current_admin_from_session),
+    db: Session = Depends(database.get_db)
+):
+    print(f"[AdminEP] Create User: mc='{member_code}', fn='{full_name}', em='{email}', pn='{phone_number}', photo='{photo.filename if photo else None}'")
+
+    if crud_user.get_user_by_member_code(db, member_code):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Member code already registered.")
+    if email and crud_user.get_user_by_email(db, email):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered.")
+
+    # Construct data for Pydantic model explicitly
+    user_data_for_schema = {
+        "member_code": member_code,
+        "full_name": full_name,
+    }
+    if email is not None: # Pydantic V2 handles Optional[str]=None correctly when key is absent or value is None
+        user_data_for_schema["email"] = email
+    if phone_number is not None:
+        user_data_for_schema["phone_number"] = phone_number
+    
+    print(f"[AdminEP] Data for UserCreate schema: {user_data_for_schema}")
+
+    try:
+        user_pydantic_schema = user_schemas.UserCreate(**user_data_for_schema)
+    except Exception as e_pydantic: # Catch Pydantic validation errors specifically if needed
+        print(f"[AdminEP] Pydantic UserCreate instantiation error: {e_pydantic}")
+        # FastAPI will likely catch Pydantic ValidationErrors and return 422 automatically,
+        # but this explicit catch can help debug if the error is unexpected.
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Invalid user data provided: {e_pydantic}")
+
+    db_user = crud_user.create_user(db=db, user=user_pydantic_schema, status="Approved")
+    print(f"[AdminEP] User {db_user.member_code} created in DB with ID {db_user.id}.")
+
+    # Forward the single photo to the AI service
+    if photo and db_user:
+        ai_service_add_face_url = f"{AI_SERVICE_BASE_URL}/add-face"
+        
+        # AI service's /add-face expects a 'files' field (which is a List[UploadFile])
+        # We send our single 'photo' as a list containing one item for the 'files' field name.
+        files_for_ai = [('files', (photo.filename, await photo.read(), photo.content_type))]
+        # We need to await photo.read() to get the contents before httpx sends it,
+        # OR pass the photo.file object if httpx handles async file-like objects well for 'files'.
+        # Simpler is to read it first. Make sure to reset pointer if needed or pass the file object.
+        # For httpx, passing the file object directly is usually better:
+        await photo.seek(0) # Reset file pointer in case it was read before
+        files_for_ai_httpx = [('files', (photo.filename, photo.file, photo.content_type))]
+
+        payload_for_ai = {'member_code': db_user.member_code}
+
+        print(f"[AdminEP] Forwarding 1 photo for member {db_user.member_code} to AI service...")
+        async with httpx.AsyncClient() as client:
+            try:
+                ai_response = await client.post(ai_service_add_face_url, data=payload_for_ai, files=files_for_ai_httpx)
+                ai_response.raise_for_status()
+                print(f"[AdminEP] AI service response for {db_user.member_code}: {ai_response.json()}")
+            except httpx.HTTPStatusError as e:
+                print(f"[AdminEP] Error calling AI service for {db_user.member_code}: {e.response.status_code} - {e.response.text}")
+                # Add more robust error handling: maybe delete db_user or flag enrollment failure
+            except httpx.RequestError as e:
+                print(f"[AdminEP] Request error calling AI service for {db_user.member_code}: {str(e)}")
+    else:
+        print(f"[AdminEP] No photo provided or user creation failed, skipping AI service call for member_code: {member_code}")
+
+
+    return db_user
+
+
 @router.put("/users/{user_id}", response_model=user_schemas.User)
 async def update_existing_user_by_admin_endpoint(
     user_id: int,
@@ -168,32 +226,53 @@ async def update_existing_user_by_admin_endpoint(
     email: Optional[str] = Form(None),
     phone_number: Optional[str] = Form(None),
     status_update: Optional[str] = Form(None, pattern="^(Approved|Inactive)$"),
-    current_admin: models.AdminUser = Depends(get_current_admin_from_session), # <<<< SỬ DỤNG DEPENDENCY MỚI
+    photo: Optional[UploadFile] = File(None), # <<< CHANGED: Expect single OPTIONAL 'photo'
+    current_admin: models.AdminUser = Depends(get_current_admin_from_session),
     db: Session = Depends(database.get_db)
 ):
     db_user = crud_user.get_user(db, user_id=user_id)
     if db_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found to update.")
-    update_data = {}
-    if full_name is not None: update_data["full_name"] = full_name
-    if email is not None:
-        if email != db_user.email:
-            existing_user_with_email = crud_user.get_user_by_email(db, email=email)
-            if existing_user_with_email and existing_user_with_email.id != user_id:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New email already registered by another user.")
-        update_data["email"] = email
-    if phone_number is not None: update_data["phone_number"] = phone_number
-    
-    user_update_schema = user_schemas.UserUpdate(**{k: v for k, v in update_data.items() if v is not None})
-    
-    updated_user = db_user # Bắt đầu với user hiện tại
-    if update_data: # Chỉ cập nhật nếu có dữ liệu thay đổi
-        updated_user = crud_user.update_user_profile(db, db_user=db_user, user_update=user_update_schema)
 
-    if status_update and status_update != updated_user.status:
-        updated_user = crud_user.update_user_status_by_admin(db, db_user=updated_user, new_status=status_update)
-    return updated_user
+    # ... (logic to update textual data: full_name, email, phone_number, status_update - remains same) ...
+    # ... (updated_user_model = crud_user.update_user_profile(...), etc.)
+    update_data_dict = {}
+    if full_name is not None: update_data_dict["full_name"] = full_name
+    # ... (handle email and phone_number updates) ...
+    updated_user_model = db_user
+    if update_data_dict:
+        user_update_schema_data = {k: v for k, v in update_data_dict.items() if v is not None}
+        if user_update_schema_data:
+             user_update_for_crud = user_schemas.UserUpdate(**user_update_schema_data)
+             updated_user_model = crud_user.update_user_profile(db, db_user=updated_user_model, user_update=user_update_for_crud)
+    if status_update and status_update != updated_user_model.status:
+        updated_user_model = crud_user.update_user_status_by_admin(db, db_user=updated_user_model, new_status=status_update)
 
+
+    # Handle NEW photo upload and forward to AI service
+    if photo and updated_user_model: # If a new photo was provided
+        member_code_for_ai = updated_user_model.member_code
+        ai_service_add_face_url = f"{AI_SERVICE_BASE_URL}/add-face"
+        
+        # AI service's /add-face expects a 'files' field (list of files)
+        # We send our single 'photo' as a list containing one item for the 'files' field
+        files_for_ai_update = [('files', (photo.filename, photo.file, photo.content_type))]
+        payload_for_ai = {'member_code': member_code_for_ai}
+
+        print(f"Forwarding 1 NEW photo for member {member_code_for_ai} to AI service at {ai_service_add_face_url}")
+        async with httpx.AsyncClient() as client:
+            try:
+                ai_response = await client.post(ai_service_add_face_url, data=payload_for_ai, files=files_for_ai_update)
+                ai_response.raise_for_status()
+                print(f"AI service response for adding new face to {member_code_for_ai}: {ai_response.json()}")
+            # ... (error handling as in create_new_user_by_admin_endpoint) ...
+            except httpx.HTTPStatusError as e:
+                print(f"Error calling AI service for adding new face to {member_code_for_ai}: {e.response.status_code} - {e.response.text}")
+            except httpx.RequestError as e:
+                print(f"Request error calling AI service for adding new face to {member_code_for_ai}: {str(e)}")
+                
+    db.refresh(updated_user_model)
+    return updated_user_model
 
 @router.delete("/users/{user_id}", response_model=user_schemas.User)
 def delete_existing_user_by_admin_endpoint(

@@ -1,3 +1,4 @@
+# requirements.txt (for your admin backend)
 fastapi
 uvicorn[standard]
 sqlalchemy
@@ -5,7 +6,8 @@ PyMySQL
 pydantic[email]
 pydantic-settings
 python-dotenv
-passlib[bcrypt]
+passlib[bcrypt] # Still good to have for future password hashing
 python-jose[cryptography]
 itsdangerous
-python-multipart  # <<< ADD THIS LINE
+python-multipart # For File Uploads
+httpx           
