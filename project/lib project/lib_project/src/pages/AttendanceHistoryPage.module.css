@@ -1,0 +1,168 @@
+/* src/pages/AttendanceHistoryPage.module.css */
+
+.pageContainer {
+  padding: 20px 30px;
+  max-width: 1300px; /* Wider for history potentially */
+  margin: 0 auto;
+  color: #ccd6f6; /* Assuming dark theme default text */
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.title {
+  font-size: 2em;
+  font-weight: 600;
+  color: #ccd6f6; /* Or #64ffda for accent */
+}
+
+.clearFiltersButton {
+  background-color: #4a5568; /* Muted grey */
+  color: #e2e8f0;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+.clearFiltersButton:hover {
+  background-color: #2d3748;
+}
+
+
+.filterForm {
+  background-color: #112240; /* Darker blue for filter section */
+  padding: 20px;
+  margin-bottom: 25px;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px; /* Spacing between filter groups */
+  align-items: flex-end;
+}
+
+.formGroup { /* Copied from Form.module.css or define base form styles */
+  margin-bottom: 0; /* Remove bottom margin as gap is used in flex */
+  flex: 1 1 200px; /* Allow filter inputs to grow and shrink */
+  min-width: 180px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #a0aec0; /* Lighter grey for labels */
+  font-size: 0.9em;
+}
+
+.formGroup input[type="text"],
+.formGroup input[type="date"] {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: #0a192f;
+  border: 1px solid #233554;
+  color: #ccd6f6;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 0.95em;
+}
+.formGroup input:focus {
+  border-color: #64ffda;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(100, 255, 218, 0.2);
+}
+
+.filterButton { /* Specific style for the filter apply button */
+  background-color: #64ffda;
+  color: #0a192f;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
+  height: fit-content; /* Align with inputs */
+  transition: background-color 0.2s;
+}
+.filterButton:hover {
+  background-color: #52d3bc;
+}
+
+.historyTable { /* Base table style, can be similar to MemberListPage's table */
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background-color: #112240;
+  color: #ccd6f6;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 20px; /* Space above table */
+}
+
+.historyTable th, .historyTable td {
+  border-bottom: 1px solid #233554;
+  padding: 12px 15px;
+  text-align: left;
+  font-size: 0.9em;
+}
+.historyTable tr:last-child td {
+  border-bottom: none;
+}
+.historyTable th {
+  background-color: #0a192f;
+  font-weight: 600;
+  color: #64ffda;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.historyTable tr:hover {
+  background-color: #172a45;
+}
+
+.loadingText, .errorText, .noDataText {
+  text-align: center;
+  padding: 30px 20px;
+  font-size: 1.1em;
+  color: #8892b0;
+}
+.errorText {
+  color: #ff7991;
+  background-color: rgba(255, 121, 145, 0.05);
+  border: 1px solid rgba(255, 121, 145, 0.3);
+  border-radius: 4px;
+  padding: 15px;
+}
+
+.paginationControls {
+  margin-top: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #a0aec0;
+}
+
+.pageButton { /* Style for pagination buttons */
+  background-color: #4a5568;
+  color: #e2e8f0;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s;
+}
+.pageButton:hover:not(:disabled) {
+  background-color: #2d3748;
+}
+.pageButton:disabled {
+  background-color: #1a202c;
+  color: #4a5568;
+  cursor: not-allowed;
+}

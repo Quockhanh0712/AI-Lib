@@ -96,3 +96,31 @@ export const deleteMember = async (userId) => {
         throw error;
     }
 };
+
+export const getAdminAllCompletedAttendance = async (params) => {
+    // params can include: skip, limit, member_code_filter, start_date_filter, end_date_filter
+    const path = '/attendance-history/completed';
+    const fullUrl = `${API_BASE_URL}${path}`;
+    console.log("[memberService] Requesting URL for getAdminAllCompletedAttendance:", fullUrl, "with params:", params);
+    try {
+        const response = await axios.get(fullUrl, {
+            params, // Axios will format these as query string: ?skip=0&limit=10&member_code_filter=SV100
+            withCredentials: true
+        });
+        return response.data; // Expected to be a list of attendance sessions
+    } catch (error) {
+        console.error("[memberService] Axios error in getAdminAllCompletedAttendance:", error.response || error.message);
+        throw error;
+    }
+};
+
+// Optional: If you want a dedicated function to call the machine UI endpoint for a specific user's history
+// This might be redundant if the admin endpoint's filter is sufficient.
+export const getUserAttendanceHistory = async (memberCode, params) => {
+    // Note: This calls the /machine endpoint, so API_BASE_URL might need to be different if proxy is only for /api/admin
+    // For simplicity, let's assume the admin can use the admin endpoint with a filter.
+    // If you need to call '/api/machine/users/...' then API_BASE_URL would need adjustment or a new one.
+    // For now, we will use the admin endpoint with filter.
+    console.warn("[memberService] getUserAttendanceHistory: Using admin endpoint with filter instead of machine endpoint for now.");
+    return getAdminAllCompletedAttendance({ ...params, member_code_filter: memberCode });
+};

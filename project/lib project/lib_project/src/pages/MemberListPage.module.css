@@ -123,3 +123,40 @@
   border-radius: 4px;
   padding: 15px;
 }
+
+/* src/pages/MemberListPage.module.css */
+/* ... your existing styles ... */
+
+.actions a,
+.actions button { /* General styling for items in the actions cell */
+  margin-right: 8px; /* Space between action items */
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.actionLink { /* For Edit and History links */
+  color: #64ffda; /* Cyan */
+  border: 1px solid #64ffda;
+  transition: background-color 0.2s, color 0.2s;
+}
+.actionLink:hover {
+  background-color: rgba(100, 255, 218, 0.1);
+  color: #a7f3d0; /* Lighter cyan */
+}
+
+.actionButton { /* Base for buttons in actions if needed, like Delete */
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.deleteButton { /* Specific for delete button */
+  color: #ff7991; /* Pink/Red */
+  border: 1px solid #ff7991;
+  transition: background-color 0.2s, color 0.2s;
+}
+.deleteButton:hover {
+  background-color: rgba(255, 121, 145, 0.1);
+  color: #ff9ab4; /* Lighter Pink/Red */
+}
