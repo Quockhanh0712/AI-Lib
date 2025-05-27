@@ -1,0 +1,68 @@
+/* src/App.module.css */
+
+/* Styles for the main navigation bar */
+.mainNav {
+  background-color: #011227; /* Very dark blue, almost black, for nav background */
+  padding: 15px 30px;       /* Top/bottom padding, Left/right padding */
+  margin-bottom: 30px;      /* Space between nav and page content */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3); /* Slightly more pronounced shadow for dark theme */
+  display: flex;            /* If you want to align items within the nav, e.g., logo and links */
+  align-items: center;      /* Vertically align items in the nav if using flex */
+}
+
+/* Styles for navigation links */
+.mainNav a {
+  color: #8892b0;           /* Muted cyan/light blue for inactive navigation links */
+  margin-right: 25px;       /* Space between navigation links */
+  text-decoration: none;    /* Remove underline from links */
+  font-size: 1.1em;         /* Slightly larger font for nav links */
+  font-weight: 500;
+  padding: 8px 4px;         /* Add some padding for a larger clickable area */
+  transition: color 0.2s ease-in-out, border-bottom-color 0.2s ease-in-out;
+  border-bottom: 2px solid transparent; /* For active/hover effect */
+}
+
+/* Styles for active navigation link (using NavLink's active class) or on hover */
+.mainNav a.active, /* This class name 'active' needs to be applied by NavLink or manually */
+.mainNav a:hover {
+  color: #64ffda;           /* Bright cyan for active or hovered link */
+  border-bottom-color: #64ffda; /* Cyan underline effect */
+}
+
+/* Optional: Styles for a general page content wrapper if you use one in App.jsx */
+.pageContent {
+  /* If you want padding around all your routed pages, add it here.
+     However, it's often better for individual page components (like FormContainer)
+     to manage their own max-width and padding for more flexibility. */
+  /* Example:
+  padding: 0 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  */
+}
+
+/* Optional: If you have a logo or app title in the nav */
+.navTitle {
+  color: #64ffda; /* Cyan for a title/logo in the nav */
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-right: auto; /* Pushes nav links to the right if nav is flex */
+}
+
+/* src/App.module.css */
+/* ... your existing styles ... */
+
+.logoutButton {
+  background-color: #4e59f4; /* A neutral or secondary color for logout */
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.logoutButton:hover {
+  background-color: #10e6b8;
+}
