@@ -1,7 +1,6 @@
 # Hệ thống điểm danh thư viện áp dụng AI nhận diện khuôn mặt
 
-## 🧑‍🤝‍🧑 Thành viên nhóm
-*(Điền thông tin các thành viên nhóm tại đây nếu có)*
+## Thành viên nhóm
 
 ---
 
