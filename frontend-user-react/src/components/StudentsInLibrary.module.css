@@ -1,0 +1,54 @@
+/* src/components/StudentsInLibrary.module.css */
+.studentsInLibraryContainer {
+    min-height: 100vh;
+    background-color: #f3f4f6;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    box-sizing: border-box;
+}
+
+.studentsListCard {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    width: 100%;
+    max-width: 800px;
+    margin-top: 50px;
+}
+
+.pageTitle {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.placeholderText {
+    color: #6b7280;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.backButtonContainer {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.backButton {
+    display: inline-block;
+    background-color: #4a90e2;
+    color: white;
+    padding: 12px 25px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+.backButton:hover {
+    background-color: #357ABD;
+}

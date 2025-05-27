@@ -1,28 +1,17 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+// frontend-admin/vite.config.js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
   server: {
-    // Cổng mà frontend-admin sẽ chạy trên host, khớp với cổng đầu tiên trong "ports" của docker-compose.yml
-    port: 8083, 
+    port: 5173, // Frontend port
     proxy: {
-      // Khi một request từ frontend bắt đầu bằng '/api'
-      '/api': { 
-        // Chuyển hướng request đến dịch vụ backend trong Docker network.
-        // 'backend' là tên dịch vụ của bạn trong docker-compose.yml.
-        target: 'http://backend:8000', 
-        changeOrigin: true, // Quan trọng để thay đổi header Host của request thành target host
-        // Xóa tiền tố '/api' khỏi đường dẫn trước khi chuyển tiếp đến backend.
-        // Ví dụ: /api/admin/login sẽ trở thành /admin/login ở backend.
-        rewrite: (path) => path.replace(/^\/api/, ''), 
-        // Cấu hình để xử lý cookies, rất quan trọng cho xác thực session.
-        // Đảm bảo cookie được thiết lập cho 'localhost' (domain của frontend)
-        // thay vì domain nội bộ của Docker ('backend').
-        cookieDomainRewrite: 'localhost', 
-        // secure: false, // Chỉ dùng cho môi trường dev nếu backend không có HTTPS
-        // ws: true, // Cho WebSocket proxy nếu bạn có dùng
-      },
-    },
-  },
-});
+      '/api': { // Khi request bắt đầu với /api
+        target: 'http://localhost:8000', // Chuyển hướng đến backend đang chạy trên máy host
+        changeOrigin: true, // Cần cho tên miền ảo (virtual hosted sites)
+        rewrite: (path) => path.replace(/^\/api/, '') // Xóa /api khỏi path trước khi gửi đến backend
+      }
+    }
+  }
+})

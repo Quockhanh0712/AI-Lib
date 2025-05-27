@@ -3,10 +3,6 @@ from sqlalchemy.orm import Session
 from db import models
 from schemas import admin as admin_schemas
 from typing import Optional
-from passlib.context import CryptContext # Thêm import này
-
-# Khởi tạo context cho việc băm mật khẩu
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_admin_by_username(db: Session, username: str) -> Optional[models.AdminUser]:
     return db.query(models.AdminUser).filter(models.AdminUser.username == username).first()
@@ -16,7 +12,7 @@ def create_admin_user(db: Session, admin: admin_schemas.AdminUserCreate) -> mode
     db_admin = models.AdminUser(
         username=admin.username,
         # ĐÃ SỬA: Băm mật khẩu và lưu vào password_hash
-        password_hash=pwd_context.hash(admin.password), 
+        password=admin.password, 
         full_name=admin.full_name,
         contact_info=admin.contact_info
     )
@@ -32,7 +28,7 @@ def authenticate_admin(db: Session, username: str, password_input: str) -> Optio
         return None
     
     # ĐÃ SỬA: Sử dụng pwd_context.verify để so sánh mật khẩu đầu vào với hash đã lưu
-    if not pwd_context.verify(password_input, admin.password_hash): 
+    if not (password_input == admin.password): # <-- SỬA DÒNG NÀY
         return None
         
     if not admin.is_active:

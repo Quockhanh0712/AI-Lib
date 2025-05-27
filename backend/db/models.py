@@ -1,33 +1,28 @@
-# app/db/models.py
+# backend/db/models.py
 
-from sqlalchemy import Column, Integer, String, TIMESTAMP, Boolean, ForeignKey, Text, LargeBinary # Bỏ import Enum ở đây
+from sqlalchemy import Column, Integer, String, TIMESTAMP, Boolean, ForeignKey, Text, LargeBinary # Giữ nguyên các import này
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from sqlalchemy.types import Enum as SQLEnum # Import Enum từ sqlalchemy.types và đổi tên để tránh xung đột
+from sqlalchemy.types import Enum as SQLEnum
 
-# Import database module để Base được định nghĩa ở đó
-# Sử dụng import tương đối
-from .database import Base # Quan trọng: Import Base từ database module
+from .database import Base
 
-import enum # Import enum module
-from datetime import datetime # Import datetime
+import enum
+from datetime import datetime
 
-# Định nghĩa Enum cho trạng thái người dùng
-class UserStatus(str, enum.Enum): # Kế thừa từ str và Enum để lưu giá trị string trong DB
+# Định nghĩa Enum cho trạng thái người dùng (Giữ nguyên)
+class UserStatus(str, enum.Enum):
     Pending = "Pending"
     Approved = "Approved"
     Rejected = "Rejected"
     Inactive = "Inactive"
 
-
-# Định nghĩa model cho bảng AdminUser
-class AdminUser(Base): # Kế thừa từ Base
+# Định nghĩa model cho bảng AdminUser (Giữ nguyên)
+class AdminUser(Base):
     __tablename__ = "admin_users"
-
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String(100), unique=True, nullable=False, index=True)
-    # Đổi tên cột từ 'password' sang 'password_hash' để khớp với file .sql (dựa trên INSERT)
-    password_hash = Column(String(255), nullable=False)
+    password = Column(String(255), nullable=False) # Đảm bảo tên cột khớp với 'password' trong SQL nếu bạn đã đổi tên nó trong file SQL init, nếu không thì để lại là 'password'
     full_name = Column(String(255), nullable=True)
     contact_info = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
@@ -35,8 +30,8 @@ class AdminUser(Base): # Kế thừa từ Base
 
     registration_requests_processed = relationship("RegistrationRequest", back_populates="processor")
 
-# Định nghĩa model cho bảng User
-class User(Base): # Kế thừa từ Base
+# Định nghĩa model cho bảng User (Cập nhật mối quan hệ)
+class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -44,47 +39,41 @@ class User(Base): # Kế thừa từ Base
     full_name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=True, index=True)
     phone_number = Column(String(20), nullable=True)
-    # Sử dụng sqlalchemy.types.Enum để ánh xạ Python Enum sang String trong DB
-    # native_enum=False cần thiết cho SQLite để lưu dưới dạng VARCHAR thay vì kiểu Enum riêng của DB
-    status = Column(SQLEnum(UserStatus, native_enum=False), nullable=False, default=UserStatus.Approved) # Sử dụng Enum object làm default
+    status = Column(SQLEnum(UserStatus, native_enum=False), nullable=False, default=UserStatus.Approved)
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
     face_embeddings = relationship("FaceEmbedding", back_populates="owner", cascade="all, delete-orphan")
+    # CẬP NHẬT MỐI QUAN HỆ ĐỂ TRỎ ĐẾN AttendanceSession
     attendance_sessions = relationship("AttendanceSession", back_populates="user_session_owner", cascade="all, delete-orphan")
 
-# Định nghĩa model cho bảng FaceEmbedding
-class FaceEmbedding(Base): # Kế thừa từ Base
+# Định nghĩa model cho bảng FaceEmbedding (Giữ nguyên)
+class FaceEmbedding(Base):
     __tablename__ = "face_embeddings"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    # Thêm unique=True cho user_id để khớp với file .sql
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
-    # Thay đổi từ LargeBinary sang 3 cột Text để khớp với file .sql
-    embedding1 = Column(Text, nullable=True) # Giả định có thể NULL nếu chưa có embedding
-    embedding2 = Column(Text, nullable=True)
-    embedding3 = Column(Text, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True) # Đảm bảo unique=True khớp với SQL
+    embedding = Column(Text, nullable=False) # Đảm bảo là TEXT và NOT NULL nếu như trong SQL bạn định nghĩa là NOT NULL
     created_at = Column(TIMESTAMP, server_default=func.now())
-    # Thêm cột updated_at để khớp với file .sql
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
-
 
     owner = relationship("User", back_populates="face_embeddings")
 
-# Định nghĩa model cho bảng AttendanceSession
-class AttendanceSession(Base): # Kế thừa từ Base
-    __tablename__ = "attendance_sessions"
+# ĐỊNH NGHĨA LẠI MODEL CHO BẢNG ATTENDANCE_SESSIONS
+class AttendanceSession(Base): # <--- Đổi tên class trở lại
+    __tablename__ = "attendance_sessions" # <--- Đổi tên bảng trong DB trở lại
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    entry_time = Column(TIMESTAMP, nullable=False, server_default=func.now())
-    exit_time = Column(TIMESTAMP, nullable=True)
-    duration_minutes = Column(Integer, nullable=True)
-    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False) # user_id là NOT NULL trong SQL
+    entry_time = Column(TIMESTAMP, nullable=False) # <--- Đổi tên cột và kiểu dữ liệu
+    exit_time = Column(TIMESTAMP, nullable=True) # <--- Đổi tên cột và kiểu dữ liệu (NULLABLE)
+    duration_minutes = Column(Integer, nullable=True) # <--- Thêm cột này
+
+    # Đổi tên mối quan hệ để khớp với tên mới
     user_session_owner = relationship("User", back_populates="attendance_sessions")
 
-# Định nghĩa model cho bảng RegistrationRequest
-class RegistrationRequest(Base): # Kế thừa từ database.Base
+# Định nghĩa model cho bảng RegistrationRequest (Giữ nguyên)
+class RegistrationRequest(Base):
     __tablename__ = "registration_requests"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -92,12 +81,9 @@ class RegistrationRequest(Base): # Kế thừa từ database.Base
     full_name = Column(String(255), nullable=False)
     email = Column(String(255), nullable=True)
     phone_number = Column(String(20), nullable=True)
-    photo_path = Column(String(255), nullable=False)
     request_time = Column(TIMESTAMP, server_default=func.now())
-    # Sử dụng sqlalchemy.types.Enum để ánh xạ Python Enum sang String trong DB
-    status = Column(SQLEnum(UserStatus, native_enum=False), nullable=False, default=UserStatus.Pending) # Sử dụng Enum object làm default
+    status = Column(SQLEnum(UserStatus, native_enum=False), nullable=False, default=UserStatus.Pending)
     processed_by_admin_id = Column(Integer, ForeignKey("admin_users.id"), nullable=True)
     processing_time = Column(TIMESTAMP, nullable=True)
 
     processor = relationship("AdminUser", back_populates="registration_requests_processed")
-

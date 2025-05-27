@@ -1,77 +1,109 @@
-# docker-compose.yml
-# Đặt file này ở thư mục gốc của dự án (AI-Lib/)
-
-version: '3.8' # Phiên bản Docker Compose
+version: '3.8'
 
 services:
-  # Dịch vụ Database (MySQL)
+  # Dịch vụ MySQL Database (GIỮ NGUYÊN NHƯ BẠN CUNG CẤP)
   db:
     image: mysql:8.0
+    container_name: mysql_db
     ports:
       - "3306:3306"
     environment:
+      MYSQL_ROOT_PASSWORD: root # <--- THAY THẾ BẰNG MẬT KHẨU MẠNH CỦA BẠN
       MYSQL_DATABASE: lib_ai
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_PASSWORD: root_password_for_dev
-      TZ: UTC # <<< THÊM DÒNG NÀY ĐỂ ĐẶT MÚI GIỜ CONTAINER LÀ UTC
+      MYSQL_USER: user_libai
+      MYSQL_PASSWORD: huy # <--- THAY THẾ BẰNG MẬT KHẨU MẠNH CỦA BẠN
     volumes:
-      - db_data:/var/lib/mysql
-      - ./db:/docker-entrypoint-initdb.d
+      - mysql_data:/var/lib/mysql
+      # Đảm bảo có thư mục `db` và file `init.sql` ở thư mục gốc của dự án
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 3s
       start_period: 30s
+    restart: always # Thêm restart policy để đảm bảo dịch vụ luôn chạy
 
-  # Dịch vụ Backend
-  backend:
-    build: ./backend # Đường dẫn đến thư mục chứa Dockerfile của backend
+  # Dịch vụ Backend AI (FastAPI) (GIỮ NGUYÊN NHƯ BẠN CUNG CẤP)
+  backend-ai:
+    build: ./backend-ai
+    container_name: backend_ai_service
     ports:
-      - "8000:8000" # Ánh xạ cổng API backend
+      - "8001:8000" # Ánh xạ cổng 8000 của container ra cổng 8001 của máy host
     environment:
-      # ĐÃ SỬA: Thêm ?charset=utf8mb4 vào cuối chuỗi kết nối để đảm bảo encoding đúng
-      environment:
-      DATABASE_URL: mysql+pymysql://user:password@db:3306/lib_ai?charset=utf8mb4
-      # Các biến MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE không cần thiết ở đây nữa
-      # vì DATABASE_URL đã được định nghĩa đầy đủ.
-      # AI_MODEL_PATH: /app/models/face_recognition_model.pth
+      # GIỮ NGUYÊN: Backend AI vẫn có quyền truy cập trực tiếp vào DB
+      DATABASE_URL: mysql+pymysql://user_libai:huy@db:3306/lib_ai
+      # ... (cấu hình GPU nếu có, giữ nguyên hoặc bỏ comment) ...
     volumes:
-      # Ánh xạ volume cho dữ liệu backend (nếu backend lưu file ảnh, model, v.v.)
-      - backend_data:/usr/src/app/data
-      # Nếu bạn muốn live-reload code backend khi phát triển, có thể ánh xạ thư mục code:
-      # - ./backend:/usr/src/app
+      # Bind mount mã nguồn cho phát triển
+      - ./backend-ai:/app
+      # Named volume cho các mô hình AI (tùy chọn, để tránh tải lại)
+      - deepface_models_data:/root/.deepface/weights # Đường dẫn mặc định của DeepFace models
     depends_on:
-      db: # Backend phụ thuộc vào database
-        condition: service_healthy # Chỉ khởi động backend khi database sẵn sàng
+      db:
+        condition: service_healthy # Đảm bảo DB sẵn sàng trước khi Backend AI khởi động
+    restart: always # Thêm restart policy
 
-
-  # Dịch vụ Frontend Người dùng (Cổng máy) - PHIÊN BẢN REACT
-  frontend-user:
-    build:
-      context: ./frontend-user-react # Đường dẫn đến thư mục React mới
-      args: # <<< ĐÃ SỬA LỖI THỤT LỀ Ở ĐÂY
-        VITE_BACKEND_API_URL: http://localhost:8000/machine # ĐÃ SỬA: Sử dụng localhost
+  # Dịch vụ Backend nghiệp vụ (MỚI THÊM)
+  # Đây là Backend chính xử lý các logic nghiệp vụ, quản lý thành viên, lịch sử, v.v.
+  # Nó sẽ tương tác với DB trực tiếp.
+  backend:
+    build: ./backend # Giả định thư mục chứa Dockerfile của backend nghiệp vụ
+    container_name: backend_service
     ports:
-      - "8082:80" # Ánh xạ cổng cho frontend user
+      - "8000:8000" # Ánh xạ cổng 8000 của container ra cổng 8000 của máy host
+    environment:
+      DATABASE_URL: mysql+pymysql://user_libai:huy@db:3306/lib_ai
+      # Nếu backend nghiệp vụ cần gọi backend-ai cho một số tác vụ (ví dụ: khi thêm/sửa ảnh khuôn mặt cho admin)
+      AI_SERVICE_URL: http://backend-ai:8000 # Gọi backend-ai bằng tên service và cổng nội bộ container của nó (8000)
+    volumes:
+      # Bind mount mã nguồn cho phát triển
+      - ./backend:/app
+      # Volume để lưu trữ dữ liệu bền vững cho backend nghiệp vụ (ví dụ: logs, uploads)
+      - backend_data:/app/data
     depends_on:
-      - backend # Frontend user phụ thuộc vào backend để gọi API
+      db:
+        condition: service_healthy # Backend nghiệp vụ phụ thuộc vào DB
+      backend-ai: # Backend nghiệp vụ có thể phụ thuộc vào AI để đảm bảo AI đã chạy
+        condition: service_started
+    restart: always # Thêm restart policy
 
-  # Dịch vụ Frontend Admin
+  # Dịch vụ Frontend User (React + Nginx) (GIỮ NGUYÊN NHƯ BẠN CUNG CẤP)
+  frontend-user-react:
+    build: ./frontend-user-react
+    container_name: frontend_user_react_app
+    ports:
+      - "8082:80" # Ánh xạ cổng 80 của container (Nginx) ra cổng 8082 của máy host
+    environment:
+      # Cấu hình BASE_URL cho Frontend để gọi Backend AI và Backend nghiệp vụ
+      # Frontend sẽ gọi Backend AI trực tiếp cho nhận diện, và Backend nghiệp vụ cho các tác vụ khác.
+      REACT_APP_AI_SERVICE_URL: http://localhost:8001 # Frontend gọi Backend AI qua cổng 8001 của host
+      REACT_APP_BACKEND_API_URL: http://localhost:8000 # Frontend gọi Backend nghiệp vụ qua cổng 8000 của host
+    depends_on:
+      backend-ai: # Frontend user phụ thuộc vào backend-ai
+        condition: service_started
+      backend: # Frontend user cũng phụ thuộc vào backend nghiệp vụ
+        condition: service_started
+    restart: always # Thêm restart policy
+
+  # Dịch vụ Frontend Admin (MỚI THÊM)
   frontend-admin:
-    build:
-      context: ./frontend-admin
-      args: # <<< ĐÃ SỬA LỖI THỤT LỀ Ở ĐÂY
-        VITE_BACKEND_API_URL: http://localhost:8000/machine # ĐÃ SỬA: Sử dụng localhost
+    build: ./frontend-admin # Giả định thư mục chứa Dockerfile của frontend-admin
+    container_name: frontend_admin_app
     ports:
-      - "8083:80"
+      - "8083:80" # Ánh xạ cổng 80 của container (Nginx) ra cổng 8083 của máy host
+    environment:
+      # Frontend admin chủ yếu gọi Backend nghiệp vụ
+      REACT_APP_BACKEND_API_URL: http://localhost:8000
     depends_on:
-      - backend
+      backend: # Frontend admin phụ thuộc vào backend nghiệp vụ
+        condition: service_started
+    restart: always # Thêm restart policy
 
-# Định nghĩa các Volumes để lưu trữ dữ liệu bền vững
 volumes:
-  db_data: # Volume cho dữ liệu database MySQL
-  backend_data: # Volume cho dữ liệu backend (nếu có)
-  # frontend_user_data: # Volume cho frontend user (nếu cần)
-  # frontend_admin_data: # Volume cho frontend admin (nếu cần)
+  # Named volume cho dữ liệu MySQL, đảm bảo dữ liệu bền vững
+  mysql_data:
+  # Named volume cho dữ liệu của backend nghiệp vụ (ví dụ: logs, uploads), nếu có
+  backend_data:
+  # Named volume để lưu trữ các mô hình AI của DeepFace, tránh tải lại mỗi lần
+  deepface_models_data:

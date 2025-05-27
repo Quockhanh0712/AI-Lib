@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime # Vẫn cần datetime cho các logic khác
 import shutil
+import httpx
 import os
-
 from db import database, models
 from schemas import admin as admin_schemas
 from schemas import user as user_schemas
@@ -17,12 +17,14 @@ from crud import crud_admin, crud_user, crud_request, crud_attendance
 # Bỏ: from jose import JWTError, jwt
 # Bỏ: from fastapi.security import OAuth2PasswordBearer
 # Bỏ: from datetime import timedelta
-
+from pytz import timezone, utc
 USER_PHOTOS_DIR = "user_photos" # Giữ lại nếu dùng cho lưu ảnh user do Admin thêm
 os.makedirs(USER_PHOTOS_DIR, exist_ok=True)
+VIETNAM_TIMEZONE = timezone('Asia/Ho_Chi_Minh')
 
+AI_SERVICE_URL = os.environ.get("AI_SERVICE_URL", "http://backend-ai:8000")
 router = APIRouter(
-    prefix="/admin",
+    # prefix="/admin",
     tags=["Admin Endpoints (Simple Session Auth)"]
 )
 
@@ -114,20 +116,73 @@ async def create_new_user_by_admin_endpoint(
     full_name: str = Form(...),
     email: Optional[str] = Form(None),
     phone_number: Optional[str] = Form(None),
-    current_admin: models.AdminUser = Depends(get_current_admin_from_session), # <<<< SỬ DỤNG DEPENDENCY MỚI
+    photo: UploadFile = File(...),
+    current_admin: models.AdminUser = Depends(get_current_admin_from_session),
     db: Session = Depends(database.get_db)
 ):
+    """Endpoint để Admin tạo người dùng mới và xử lý ảnh khuôn mặt, lưu embedding dạng TEXT."""
     if crud_user.get_user_by_member_code(db, member_code):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Member code already registered.")
     if email and crud_user.get_user_by_email(db, email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered.")
+
+    photo_content = await photo.read()
+    print(f"DEBUG CREATE: Kích thước photo_content đọc được: {len(photo_content)} bytes")
+    print(f"DEBUG CREATE: Content-Type của ảnh: {photo.content_type}")
+    # Không in toàn bộ photo_content vì nó có thể rất lớn
+
+    embedding_list = None
+    face_embedding_text = None
+
+    try:
+        async with httpx.AsyncClient() as client:
+            ai_response = await client.post(
+                f"{AI_SERVICE_URL}/face-embeddings/extract",
+                files={"image_file": (photo.filename, photo_content, photo.content_type)}
+            )
+            ai_response.raise_for_status()
+            ai_result = ai_response.json()
+
+            print(f"DEBUG CREATE: Toàn bộ ai_result nhận được từ AI service: {ai_result}") # <--- Dòng RẤT QUAN TRỌNG
+
+            embedding_list = ai_result.get("embedding")
+            print(f"DEBUG CREATE: embedding_list sau khi .get('embedding'): {embedding_list}")
+
+            if not embedding_list:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                                    detail="AI service did not return embedding.")
+
+            face_embedding_text = ",".join(map(str, embedding_list))
+            print(f"DEBUG CREATE: face_embedding_text cuối cùng trước khi lưu: {face_embedding_text[:200]}...") # In 200 ký tự đầu
+
+    except httpx.HTTPStatusError as e:
+        print(f"DEBUG CREATE: Lỗi HTTPStatusError từ AI service: {e.response.text}")
+        raise HTTPException(status_code=e.response.status_code,
+                            detail=f"Lỗi từ AI service khi xử lý ảnh: {e.response.text}")
+    except httpx.RequestError as e:
+        print(f"DEBUG CREATE: Lỗi RequestError khi kết nối AI service: {e}")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                            detail=f"Không thể kết nối đến AI service: {e}")
+    except Exception as e:
+        print(f"DEBUG CREATE: Lỗi không xác định khi gọi AI service: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f"Lỗi không xác định khi gọi AI service: {str(e)}")
+
     user_data = user_schemas.UserCreate(
         member_code=member_code,
         full_name=full_name,
         email=email,
-        phone_number=phone_number
+        phone_number=phone_number,
     )
-    db_user = crud_user.create_user(db=db, user=user_data, status="Approved")
+    
+    # <--- GỌI HAM CRUD VỚI CHUỖI TEXT THAY VÌ LIST ---
+    db_user = crud_user.create_user(
+        db=db, 
+        user=user_data, 
+        status="Approved",
+        face_embedding_data=face_embedding_text, # <-- TRUYỀN CHUỖI TEXT ĐÃ CHUYỂN ĐỔI
+    )
+    
     return db_user
 
 @router.get("/users/", response_model=List[user_schemas.User])
@@ -168,12 +223,14 @@ async def update_existing_user_by_admin_endpoint(
     email: Optional[str] = Form(None),
     phone_number: Optional[str] = Form(None),
     status_update: Optional[str] = Form(None, pattern="^(Approved|Inactive)$"),
-    current_admin: models.AdminUser = Depends(get_current_admin_from_session), # <<<< SỬ DỤNG DEPENDENCY MỚI
+    photo: Optional[UploadFile] = File(None), # <-- THÊM THAM SỐ NÀY ĐỂ CẬP NHẬT ẢNH
+    current_admin: models.AdminUser = Depends(get_current_admin_from_session),
     db: Session = Depends(database.get_db)
 ):
     db_user = crud_user.get_user(db, user_id=user_id)
     if db_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found to update.")
+
     update_data = {}
     if full_name is not None: update_data["full_name"] = full_name
     if email is not None:
@@ -184,11 +241,50 @@ async def update_existing_user_by_admin_endpoint(
         update_data["email"] = email
     if phone_number is not None: update_data["phone_number"] = phone_number
     
+    # --- LOGIC XỬ LÝ ẢNH MỚI VÀ EMBEDDING (NẾU CÓ) ---
+    face_embedding_text_to_update = None
+
+    if photo: # Nếu có ảnh mới được cung cấp
+        photo_content = await photo.read()
+        try:
+            async with httpx.AsyncClient() as client:
+                ai_response = await client.post(
+                    f"{AI_SERVICE_URL}/face-embeddings/extract", # Gọi endpoint của Backend AI
+                    files={"image_file": (photo.filename, photo_content, photo.content_type)}
+                )
+                ai_response.raise_for_status()
+                ai_result = ai_response.json()
+                
+                embedding_list = ai_result.get("embedding")
+                print(f"DEBUG: embedding_list received from AI: {embedding_list}")
+                if not embedding_list:
+                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                                        detail="AI service did not return embedding.")
+                
+                # Chuyển đổi list embedding thành chuỗi TEXT
+                face_embedding_text_to_update = ",".join(map(str, embedding_list))
+
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, 
+                                detail=f"Lỗi từ AI service khi xử lý ảnh mới: {e.response.text}")
+        except httpx.RequestError as e:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
+                                detail=f"Không thể kết nối đến AI service để xử lý ảnh mới: {e}")
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                                detail=f"Lỗi không xác định khi xử lý ảnh mới: {str(e)}")
+    # --- KẾT THÚC LOGIC XỬ LÝ ẢNH MỚI ---
+
     user_update_schema = user_schemas.UserUpdate(**{k: v for k, v in update_data.items() if v is not None})
     
     updated_user = db_user # Bắt đầu với user hiện tại
-    if update_data: # Chỉ cập nhật nếu có dữ liệu thay đổi
-        updated_user = crud_user.update_user_profile(db, db_user=db_user, user_update=user_update_schema)
+    if update_data or photo: # Chỉ cập nhật nếu có dữ liệu thay đổi HOẶC CÓ ẢNH MỚI
+        updated_user = crud_user.update_user_profile(
+            db, 
+            db_user=db_user, 
+            user_update=user_update_schema,
+            face_embedding_text=face_embedding_text_to_update, # <-- TRUYỀN EMBEDDING MỚI (nếu có)
+        )
 
     if status_update and status_update != updated_user.status:
         updated_user = crud_user.update_user_status_by_admin(db, db_user=updated_user, new_status=status_update)
@@ -264,24 +360,87 @@ async def process_registration_request_endpoint(
 def get_admin_all_completed_history_endpoint(
     skip: int = 0, limit: int = 100,
     member_code_filter: Optional[str] = None,
-    start_date_filter: Optional[str] = None,
-    end_date_filter: Optional[str] = None,
-    current_admin: models.AdminUser = Depends(get_current_admin_from_session), # <<<< SỬ DỤNG DEPENDENCY MỚI
+    start_date_filter: Optional[str] = None, # Input là chuỗi "YYYY-MM-DD"
+    end_date_filter: Optional[str] = None,   # Input là chuỗi "YYYY-MM-DD"
+    current_admin: models.AdminUser = Depends(get_current_admin_from_session),
     db: Session = Depends(database.get_db)
 ):
-    start_dt: Optional[datetime] = None
-    end_dt: Optional[datetime] = None
-    if start_date_filter:
-        try: start_dt = datetime.strptime(start_date_filter, "%Y-%m-%d")
-        except ValueError: raise HTTPException(status_code=400, detail="Invalid start_date_filter format. Use YYYY-MM-DD")
-    if end_date_filter:
-        try: end_dt = datetime.strptime(end_date_filter, "%Y-%m-%d")
-        except ValueError: raise HTTPException(status_code=400, detail="Invalid end_date_filter format. Use YYYY-MM-DD")
+    # Khai báo biến datetime để truyền vào hàm CRUD
+    final_start_datetime: Optional[datetime] = None
+    final_end_datetime: Optional[datetime] = None
 
-    history = crud_attendance.get_admin_all_completed_attendance_history(
-        db, skip=skip, limit=limit,
-        filter_member_code=member_code_filter,
-        start_date=start_dt,
-        end_date=end_dt
+    # Xử lý start_date_filter
+    if start_date_filter:
+        try:
+            # Chuyển đổi chuỗi ngày sang đối tượng date, sau đó kết hợp với thời gian 00:00:00 (đầu ngày)
+            # để tạo datetime object.
+            parsed_date = datetime.strptime(start_date_filter, "%Y-%m-%d").date()
+            final_start_datetime = datetime.combine(parsed_date, datetime.min.time())
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid start_date_filter format. Use YYYY-MM-DD")
+    
+    # Xử lý end_date_filter
+    if end_date_filter:
+        try:
+            # Chuyển đổi chuỗi ngày sang đối tượng date, sau đó kết hợp với thời gian 23:59:59 (cuối ngày)
+            # để tạo datetime object.
+            parsed_date = datetime.strptime(end_date_filter, "%Y-%m-%d").date()
+            final_end_datetime = datetime.combine(parsed_date, datetime.max.time())
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid end_date_filter format. Use YYYY-MM-DD")
+
+    # Xử lý member_code_filter để lấy user_id
+    user_id_to_filter: Optional[int] = None
+    if member_code_filter:
+        # Giả định crud_user.get_user_by_member_code là hàm đúng để lấy user từ member_code
+        user_by_member_code = crud_user.get_user_by_member_code(db, member_code=member_code_filter)
+        if user_by_member_code:
+            user_id_to_filter = user_by_member_code.id
+        else:
+            # Nếu không tìm thấy người dùng với member_code này, trả về danh sách rỗng
+            return []
+
+    # Gọi hàm CRUD để lấy lịch sử điểm danh
+    # Giả định crud_attendance.get_admin_all_completed_attendance_history có các tham số này
+    history_from_db = crud_attendance.get_admin_all_completed_attendance_history(
+        db,
+        skip=skip,
+        limit=limit,
+        filter_member_code=member_code_filter, # Truyền member_code_filter (CRUD sẽ tự xử lý hoặc bạn sẽ sửa CRUD)
+        # Hoặc nếu CRUD của bạn mong đợi user_id, thì dùng:
+        # user_id=user_id_to_filter,
+        start_date=final_start_datetime, # Truyền datetime objects cho CRUD
+        end_date=final_end_datetime      # Truyền datetime objects cho CRUD
     )
-    return history
+
+    # Xử lý và định dạng thời gian sang múi giờ Việt Nam
+    formatted_history = []
+    for session in history_from_db:
+        entry_time_vietnam: Optional[str] = None
+        exit_time_vietnam: Optional[str] = None
+
+        if session.entry_time:
+            # Bước 1: Gắn múi giờ UTC cho đối tượng datetime (giả định nó là naive UTC từ DB)
+            entry_time_utc_aware = session.entry_time.replace(tzinfo=utc)
+            # Bước 2: Chuyển đổi sang múi giờ Việt Nam
+            entry_time_vietnam_aware = entry_time_utc_aware.astimezone(VIETNAM_TIMEZONE)
+            # Bước 3: Định dạng thành chuỗi theo kiểu "MM/DD/YYYY, HH:MM:SS AM/PM"
+            entry_time_vietnam = entry_time_vietnam_aware.strftime("%m/%d/%Y, %I:%M:%S %p")
+
+        if session.exit_time:
+            # Lặp lại các bước tương tự cho exit_time
+            exit_time_utc_aware = session.exit_time.replace(tzinfo=utc)
+            exit_time_vietnam_aware = exit_time_utc_aware.astimezone(VIETNAM_TIMEZONE)
+            exit_time_vietnam = exit_time_vietnam_aware.strftime("%m/%d/%Y, %I:%M:%S %p")
+        
+        # Thêm đối tượng AttendanceSession đã được định dạng vào danh sách
+        formatted_history.append(
+            attendance_schemas.AttendanceSession(
+                id=session.id,
+                user_id=session.user_id, # Đảm bảo rằng model.AttendanceSession có trường này
+                entry_time=entry_time_vietnam,
+                exit_time=exit_time_vietnam,
+                duration_minutes=session.duration_minutes
+            )
+        )
+    return formatted_history

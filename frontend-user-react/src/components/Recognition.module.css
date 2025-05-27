@@ -1,0 +1,257 @@
+/* src/components/Recognition.module.css */
+
+.recognitionContainer {
+    min-height: 100vh; /* Đảm bảo chiều cao tối thiểu để nội dung không bị co lại */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f3f4f6; /* Nền màu xám nhẹ */
+    padding: 32px 20px;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+.mainTitle {
+    font-size: 2.25rem; /* ~36px */
+    font-weight: bold;
+    text-align: center;
+    color: #1f2937; /* Màu chữ đậm */
+    margin-top: 32px;
+    margin-bottom: 16px;
+}
+
+.subTitle {
+    font-size: 1.5rem; /* ~24px */
+    font-weight: bold;
+    text-align: center;
+    color: #374151;
+    margin-bottom: 24px;
+}
+
+.contentWrapper {
+    max-width: 1280px; /* Chiều rộng tối đa của container chính */
+    width: 100%;
+    margin: 0 auto; /* Canh giữa */
+    background-color: #ffffff; /* Nền trắng */
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Hiệu ứng đổ bóng */
+    padding: 24px;
+    display: flex;
+    flex-direction: column; /* Mặc định là column trên mobile */
+    gap: 24px; /* Khoảng cách giữa các phần tử flex */
+}
+
+@media (min-width: 768px) { /* Trên màn hình tablet và desktop */
+    .contentWrapper {
+        flex-direction: row; /* Chuyển sang hiển thị theo hàng ngang */
+        /* Nếu muốn video bên phải, dùng flex-direction: row-reverse; */
+    }
+}
+
+.videoPanel {
+    flex: 1; /* Chiếm hết không gian còn lại */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* Canh giữa video theo chiều dọc */
+    min-height: 480px; /* Đảm bảo có chiều cao tối thiểu cho panel video */
+}
+
+.webcamVideo, .finalFrameImage {
+    width: 640px; /* Chiều rộng cố định */
+    height: 480px; /* Chiều cao cố định */
+    object-fit: cover; /* Đảm bảo hình ảnh/video lấp đầy khung mà không bị méo */
+    border-radius: 8px;
+    border: 2px solid #d1d5db; /* Viền */
+    background-color: #e5e7eb; /* Nền xám khi chưa có hình ảnh */
+    margin-bottom: 8px;
+    /* display: block; */ /* Đảm bảo là block element */
+}
+
+.hidden {
+    display: none !important; /* Quan trọng: dùng !important để đảm bảo override các style khác */
+}
+
+.infoPanel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    background-color: #fdfdfd; /* Nền hơi trắng */
+    border-radius: 8px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.05); /* Bóng mờ bên trong */
+}
+
+.infoTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #374151;
+}
+
+.buttonGroup {
+    width: 100%;
+    display: flex; /* Dùng flex để các nút có thể xếp cạnh nhau nếu muốn */
+    flex-direction: column; /* Xếp theo cột */
+    gap: 10px; /* Khoảng cách giữa các nút */
+    margin-bottom: 20px;
+}
+
+.actionButton {
+    padding: 12px 20px; /* Kích thước nút lớn hơn */
+    border-radius: 6px;
+    color: white;
+    width: 100%;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease; /* Thêm transform cho hiệu ứng click */
+    cursor: pointer;
+    border: none;
+    font-weight: 600; /* Chữ đậm hơn */
+    font-size: 1.1rem;
+}
+
+.actionButton:active {
+    transform: translateY(1px); /* Hiệu ứng nhấn nút */
+}
+
+.startButton {
+    background-color: #22c55e; /* Màu xanh lá */
+}
+
+.startButton:hover {
+    background-color: #16a34a;
+}
+
+.stopButton {
+    background-color: #ef4444; /* Màu đỏ */
+}
+
+.stopButton:hover {
+    background-color: #dc2626;
+}
+
+.recognitionInfo, .statusMessage {
+    margin-top: 8px;
+    font-size: 1rem;
+    padding: 8px;
+    border-radius: 4px;
+    width: 100%;
+    text-align: center;
+}
+
+.successText {
+    color: #16a34a; /* Xanh lá */
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+.errorText {
+    color: #dc2626; /* Đỏ */
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+.infoText {
+    color: #2563eb; /* Xanh dương */
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+}
+
+.warningText { /* Thêm style cho warning nếu có */
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+}
+
+
+.statusMessage {
+    font-weight: 500;
+}
+
+.confirmForm {
+    width: 100%;
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.formLabel {
+    display: block;
+    color: #374151;
+    font-size: 0.95rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.formInput {
+    width: calc(100% - 22px); /* Trừ padding và border */
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    outline: none;
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.formInput:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.confirmButton {
+    background-color: #3b82f6; /* Xanh dương */
+}
+
+.confirmButton:hover {
+    background-color: #2563eb;
+}
+
+.navigationButtons {
+    margin-top: 30px;
+    display: flex;
+    gap: 20px;
+    justify-content: center; /* Canh giữa các nút điều hướng */
+}
+
+.navButton {
+    display: inline-block;
+    padding: 12px 25px; /* Kích thước nút lớn hơn */
+    background-color: #6c757d; /* Màu xám */
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.navButton:hover {
+    background-color: #5a6268;
+}
+
+.navButton:active {
+    transform: translateY(1px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) { /* Dưới màn hình tablet */
+    .webcamVideo, .finalFrameImage {
+        width: 100%; /* Video/ảnh full width trên mobile */
+        height: auto; /* Chiều cao tự động để giữ tỉ lệ */
+        max-height: 400px; /* Giới hạn chiều cao để không quá lớn */
+    }
+    .mainTitle {
+        font-size: 1.8rem;
+    }
+    .subTitle {
+        font-size: 1.3rem;
+    }
+    .contentWrapper {
+        padding: 15px;
+    }
+}

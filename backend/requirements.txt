@@ -12,3 +12,4 @@ itsdangerous
 pydantic-settings
 python-multipart
 pytz
+httpx

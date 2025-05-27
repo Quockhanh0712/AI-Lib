@@ -8,7 +8,6 @@ class RegistrationRequestBase(BaseModel):
     full_name: constr(max_length=255)
     email: Optional[EmailStr] = None
     phone_number: Optional[constr(max_length=20)] = None
-    photo_path: constr(max_length=255) # Backend sẽ xử lý lưu ảnh và nhận path này từ frontend
 
 class RegistrationRequestCreate(RegistrationRequestBase):
     pass

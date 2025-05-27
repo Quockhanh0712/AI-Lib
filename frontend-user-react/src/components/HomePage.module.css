@@ -1,0 +1,117 @@
+/* src/components/HomePage.module.css */
+
+.homePageContainer {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f3f4f6;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.mainTitle {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #1f2937;
+    margin-bottom: 50px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+@media (max-width: 768px) {
+    .mainTitle {
+        font-size: 2.5rem;
+        margin-bottom: 30px;
+    }
+}
+
+.buttonsContainer {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    width: 100%;
+    max-width: 1000px;
+}
+
+@media (max-width: 768px) {
+    .buttonsContainer {
+        flex-direction: column;
+        gap: 20px;
+    }
+}
+
+
+.buttonLink {
+    flex: 1;
+    background-color: #3b82f6;
+    color: white;
+    font-weight: bold;
+    padding: 50px 25px;
+    border-radius: 10px;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease-in-out;
+    text-align: center;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.buttonLink:hover {
+    transform: scale(1.05);
+    box-shadow: 0 15px 20px rgba(0, 0, 0, 0.2);
+}
+
+.buttonLink.recognitionButton {
+    background-color: #3b82f6;
+}
+
+.buttonLink.recognitionButton:hover {
+    background-color: #2563eb;
+}
+
+.buttonLink.studentsButton {
+    background-color: #22c55e;
+}
+
+.buttonLink.studentsButton:hover {
+    background-color: #16a34a;
+}
+
+.buttonIcon {
+    height: 80px;
+    width: 80px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 15px;
+    transition: color 0.3s ease-in-out;
+}
+
+.buttonLink:hover .buttonIcon {
+    color: white;
+}
+
+.buttonText {
+    font-size: 2.5rem;
+}
+
+@media (max-width: 768px) {
+    .buttonText {
+        font-size: 2rem;
+    }
+}
+
+.buttonDescription {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.1rem;
+    margin-top: 10px;
+    display: none;
+}
+
+@media (min-width: 769px) {
+    .buttonDescription {
+        display: block;
+    }
+}
