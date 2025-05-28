@@ -1,66 +1,116 @@
-# Hệ thống điểm danh thư viện thông minh bằng nhận diện khuôn mặt
+# Hệ thống điểm danh thư viện áp dụng AI nhận diện khuôn mặt
 
 ## Thành viên nhóm
-- Hoàng Ngọc Nam : MSV 23020403
-- Trần Quốc Khánh : MSV 23020387
-- Nguyễn Văn Huy : MSV 23020379
-- Nguyễn Anh Kiệt : MSV 23020383
+Hoàng Ngọc Nam : MSV 23020403
+Trần Quốc Khánh : MSV 23020387
+Nguyễn Văn Huy : MSV 23020379
+Nguyễn Anh Kiệt : MSV 23020383
 ---
 
-## Giới thiệu
+## 1. Mục tiêu dự án
 
-Đây là một hệ thống điểm danh hiện đại sử dụng công nghệ nhận diện khuôn mặt để ghi nhận việc ra/vào của thành viên thư viện. Hệ thống được thiết kế nhằm tự động hóa quy trình điểm danh, nâng cao độ chính xác và cải thiện trải nghiệm người dùng cũng như khả năng quản lý của quản trị viên.
+Mục tiêu của dự án là xây dựng một hệ thống điểm danh tự động và hiện đại cho thư viện, tích hợp công nghệ nhận diện khuôn mặt bằng AI để ghi nhận việc vào/ra của thành viên. Đồng thời hệ thống cũng cung cấp cho quản trị viên một công cụ hữu ích để quản lý và theo dõi hoạt động của các thành viên.
 
-## Tính năng chính
-
-- **Điểm danh tự động bằng khuôn mặt** (Check-in / Check-out).
-- **Bảng điều khiển quản trị viên** với đầy đủ chức năng quản lý thành viên (thêm/sửa/xoá).
-- **Quản lý dữ liệu khuôn mặt** phục vụ nhận diện.
-- **Xem lịch sử điểm danh chi tiết**, có thể lọc theo mã thành viên hoặc thời gian.
-- **Xác thực bảo mật** dành cho quản trị viên.
-- **Hỗ trợ quy trình đăng ký thành viên mới**, yêu cầu phê duyệt bởi quản trị viên.
-
-## Kiến trúc hệ thống
-
-- **Frontend Quản trị viên:** React + Vite.
-- **Frontend Kiosk người dùng:** React hoặc HTML/JS đơn giản.
-- **Backend Quản trị viên:** FastAPI (Python) xử lý xác thực, quản lý dữ liệu, điểm danh.
-- **Dịch vụ AI:** FastAPI + DeepFace/ArcFace nhận diện và ghi nhận khuôn mặt.
-- **Cơ sở dữ liệu:** MySQL (sử dụng SQLAlchemy ORM).
-
-## Luồng hoạt động chính
-
-1. Thành viên tiến đến kiosk, quét khuôn mặt.
-2. Hệ thống AI xác định thành viên, xác nhận mã.
-3. Thời gian vào/ra được ghi nhận trong cơ sở dữ liệu.
-4. Quản trị viên có thể theo dõi lịch sử và quản lý toàn bộ thành viên.
-
-## Hướng dẫn sử dụng
-
-### Tải image từ Docker Hub và chạy hệ thống
-
-#### Bước 1: Tải image
-- docker pull huy332005/frontend-admin-app:1.0
-- docker pull huy332005/frontend-user-react-app:1.0
-- docker pull huy332005/backend-api-service:1.0
-- docker pull huy332005/backend-ai-service:1.0
-#### Bước 2: Truy cập hệ thống
-- Khởi động hệ thống: docker compose up -d
-- Giao diện Admin: http://localhost:8083
-- Giao diện Người dùng: http://localhost:8082
-
-**Đối với người dùng:**
-- Quét mặt và nhập mã để Check-in.
-- Nhập lại mã để Check-out.
-- Xem danh sách thành viên đang trong thư viện.
-
-**Đối với quản trị viên:**
-- Đăng nhập hệ thống.
-- Thêm, sửa, xoá thành viên.
-- Xem và lọc lịch sử điểm danh.
-- Đăng xuất khi kết thúc phiên làm việc.
----
-- Chi tiết hệ thống có thể xem trong 'báo cáo hệ thống.pdf'
-- Link docker-hub : [https://l.facebook.com/l.php?u=https%3A%2F%2Fhub.docker.com%2Fr%2Fhuy332005%2Fbackend-ai-service%3Ffbclid%3DIwZXh0bgNhZW0CMTAAYnJpZBExbUpsSVpzcjBkVTdaSVozeAEelF1Lqc7F_4ZIvXmGMSTXudxcdeQygNs1p3EHGOS-6cVjCBWSFlF_dr6nfZ4_aem_1_0CcUBfVWQocXZFAZv3fw&h=AT2Fi0q4ivNiHjcPHO9uj0iyNBasRvla8Qu3p76UDeCPu_wZa_GxwSx-t5AyTNJ3SJDQw5GuhpaGATJS8Ao3sCdNEapZC1Iw-S74auZReboomkLczxz9KPDILezxD7jRkHNZOQVJXdoREvxvDijVxQ](https://hub.docker.com/r/huy332005/backend-ai-service?fbclid=IwY2xjawKkFpdleHRuA2FlbQIxMABicmlkETFtSmxJWnNyMGRVN1pJWjN4AR6UXUupzsX_hki9eYYxJNe53Fx15DKA2zWncQcY5L7pxWMIFZIWUX92vqd9ng_aem_1_0CcUBfVWQocXZFAZv3fw)
+### Mục tiêu cốt lõi của hệ thống:
+- Triển khai nhận diện khuôn mặt để điểm danh vào, và có thể cả điểm danh ra.
+- Cung cấp giao diện quản trị để thực hiện đầy đủ thao tác quản lý dữ liệu thành viên.
+- Cho phép quản trị viên quản lý dữ liệu khuôn mặt phục vụ cho nhận diện.
+- Hiển thị lịch sử điểm danh chi tiết, cả ở mức tổng thể và từng thành viên.
+- Hỗ trợ quy trình đăng ký tài khoản mới.
+- Đảm bảo truy cập và thao tác của quản trị viên được bảo mật.
 
 ---
+
+## 2. Tổng quan kiến trúc hệ thống
+
+Hệ thống gồm các thành phần chính sau:
+
+### Frontend Quản trị viên (React, Vite)
+Giao diện web cho quản trị viên thư viện để quản lý thành viên, đăng ký thành viên, xem lịch sử điểm danh và quản lý dữ liệu khuôn mặt.
+
+### Frontend cho người dùng
+Giao diện cho phép người dùng thực hiện điểm danh vào/ra thông qua camera và nhập mã thành viên.
+
+### Backend Quản trị viên (FastAPI)
+Cung cấp API bảo mật để thực hiện các chức năng quản trị: quản lý thành viên, truy xuất lịch sử điểm danh. Backend này cũng chịu trách nhiệm tạo tài khoản người dùng và gọi dịch vụ AI để ghi nhận khuôn mặt.
+
+### Dịch vụ AI (FastAPI)
+Dịch vụ backend chuyên xử lý:
+- **Ghi nhận khuôn mặt:** Nhận ảnh, trích xuất embedding khuôn mặt và lưu trữ lại.
+- **Nhận diện khuôn mặt:** Nhận ảnh thời gian thực, so sánh với dữ liệu đã lưu và trả kết quả nhận dạng.
+
+### Cơ sở dữ liệu (MySQL)
+CSDL trung tâm lưu trữ:
+- `admin_users`: Tài khoản quản trị
+- `users`: Thông tin thành viên thư viện
+- `face_embeddings`: Embedding khuôn mặt gắn với thành viên
+- `attendance_sessions`: Phiên điểm danh
+
+---
+
+## 3. Các trường hợp sử dụng và chức năng chính
+
+### A. Phía người dùng
+
+#### UC1: Điểm danh vào bằng nhận diện khuôn mặt
+- Người dùng tiến đến đối diện camera.
+- Dịch vụ AI xử lý ảnh, xác định thành viên từ embedding đã lưu.
+- Nếu nhận diện thành công và đã được phê duyệt, tạo phiên điểm danh (ghi nhận thời gian vào).
+
+#### UC2: Hiển thị danh sách thành viên đang trong thư viện
+- Hệ thống hiển thị danh sách các thành viên hiện đang có mặt.
+
+#### UC3: Điểm danh ra
+- Người dùng chọn tùy chọn checkout.
+- Hệ thống xác minh và ghi nhận thời gian rời đi.
+
+#### UC4: Xem lịch sử chuyên cần cá nhân
+- Người dùng vừa điểm danh vào thành công (đang ở màn hình sau UC1).
+- Người dùng có thể xem lại danh sách các lần đã vào và ra thư viện của mình.
+
+---
+
+### B. Phía quản trị viên (Frontend & Backend)
+
+#### UC5: Đăng nhập quản trị viên
+- Đăng nhập bảo mật để truy cập giao diện quản trị.
+
+#### UC6: Quản lý thành viên
+- **Tạo mới:** Quản trị viên thêm thành viên mới với thông tin và ảnh. Backend gọi dịch vụ AI để ghi nhận khuôn mặt.
+- **Xem danh sách:** Xem danh sách thành viên với chức năng tìm kiếm/lọc.
+- **Chỉnh sửa:** Sửa thông tin thành viên; có thể thêm ảnh khuôn mặt mới.
+- **Xoá:** Xoá tài khoản thành viên khỏi hệ thống.
+
+#### UC7: Xem lịch sử điểm danh (tổng thể)
+- Xem danh sách tất cả phiên điểm danh đã hoàn tất.
+- Lọc theo mã thành viên, khoảng thời gian, v.v.
+
+#### UC8: Xem lịch sử điểm danh của một thành viên cụ thể
+- Chọn một thành viên và xem lịch sử điểm danh riêng của họ.
+
+#### UC9: Đăng xuất quản trị viên
+- Đăng xuất khỏi giao diện quản trị.
+
+
+
+## 4. Yêu cầu hệ thống:
+ - đã cà đặt docker 
+ - Kiểm tra bằng lệnh: docker --version docker compose version
+
+
+## 5. Cách sử dụng: 
+ - gõ lệnh : docker pull 
+    + docker pull huy332005/frontend-admin-app:1.0
+    + docker pull huy332005/frontend-user-react-app:1.0
+    + docker pull huy332005/backend-api-service:1.0
+    + docker pull huy332005/backend-ai-service:1.0
+ - rồi lệnh : docker compose up -d
+ - Giao diện Admin: http://localhost:8083
+ - Giao diện Người dùng: http://localhost:8082
+ ## 6. Link docker-hub : [https://l.facebook.com/l.php?u=https%3A%2F%2Fhub.docker.com%2Fr%2Fhuy332005%2Fbackend-ai-service%3Ffbclid%3DIwZXh0bgNhZW0CMTAAYnJpZBExbUpsSVpzcjBkVTdaSVozeAEelF1Lqc7F_4ZIvXmGMSTXudxcdeQygNs1p3EHGOS-6cVjCBWSFlF_dr6nfZ4_aem_1_0CcUBfVWQocXZFAZv3fw&h=AT2Fi0q4ivNiHjcPHO9uj0iyNBasRvla8Qu3p76UDeCPu_wZa_GxwSx-t5AyTNJ3SJDQw5GuhpaGATJS8Ao3sCdNEapZC1Iw-S74auZReboomkLczxz9KPDILezxD7jRkHNZOQVJXdoREvxvDijVxQ](https://hub.docker.com/r/huy332005/backend-ai-service?fbclid=IwY2xjawKkFpdleHRuA2FlbQIxMABicmlkETFtSmxJWnNyMGRVN1pJWjN4AR6UXUupzsX_hki9eYYxJNe53Fx15DKA2zWncQcY5L7pxWMIFZIWUX92vqd9ng_aem_1_0CcUBfVWQocXZFAZv3fw)
+
+## 7. Kết quả kỳ vọng
+ - Người dùng có thể nhanh chóng nhận diện và đăng nhập từ webcam.
+ - Giao diện admin trực quan, dễ quản lý.
+ - Backend phản hồi nhanh, hỗ trợ tải lớn và dễ mở rộng.
+ - Dễ dàng deploy, scale khi cần thiết.
