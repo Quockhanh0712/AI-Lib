@@ -1,9 +1,9 @@
 # app/routers/admin_endpoints.py
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Form, UploadFile, File
-from fastapi.security import OAuth2PasswordRequestForm # Vẫn dùng để lấy username/password tiện lợi
+from fastapi.security import OAuth2PasswordRequestForm 
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime # Vẫn cần datetime cho các logic khác
+from datetime import datetime
 import shutil
 import httpx
 import os
@@ -13,10 +13,6 @@ from schemas import user as user_schemas
 from schemas import request as request_schemas
 from schemas import attendance as attendance_schemas
 from crud import crud_admin, crud_user, crud_request, crud_attendance
-# Bỏ: from core.config import settings (trừ khi bạn dùng cho việc khác ngoài JWT)
-# Bỏ: from jose import JWTError, jwt
-# Bỏ: from fastapi.security import OAuth2PasswordBearer
-# Bỏ: from datetime import timedelta
 from pytz import timezone, utc
 USER_PHOTOS_DIR = "user_photos" # Giữ lại nếu dùng cho lưu ảnh user do Admin thêm
 os.makedirs(USER_PHOTOS_DIR, exist_ok=True)
@@ -28,26 +24,22 @@ router = APIRouter(
     tags=["Admin Endpoints (Simple Session Auth)"]
 )
 
-# --- Dependency để kiểm tra Admin đã đăng nhập qua session ---
 async def get_current_admin_from_session(request: Request, db: Session = Depends(database.get_db)) -> models.AdminUser:
     """
     Lấy thông tin admin từ session.
     Nếu chưa đăng nhập hoặc admin không tồn tại/không active, raise HTTPException.
     """
     admin_id = request.session.get("admin_id")
-    # print(f"Session data in get_current_admin_from_session: {request.session}") # Debug
     if not admin_id:
-        # print("Admin ID not in session") # Debug
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated (no session)",
         )
     
     try:
-        admin_id_int = int(admin_id) # Đảm bảo admin_id là số nguyên
+        admin_id_int = int(admin_id)
     except ValueError:
-        # print(f"Invalid admin_id format in session: {admin_id}") # Debug
-        request.session.clear() # Xóa session hỏng
+        request.session.clear()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid session data.",
@@ -55,20 +47,17 @@ async def get_current_admin_from_session(request: Request, db: Session = Depends
 
     admin = db.query(models.AdminUser).filter(models.AdminUser.id == admin_id_int).first()
     if not admin:
-        # print(f"Admin with ID {admin_id_int} not found in DB") # Debug
-        request.session.clear() # Xóa session nếu user không còn tồn tại
+        request.session.clear()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated (admin not found)",
         )
     if not admin.is_active:
-        # print(f"Admin {admin.username} is not active") # Debug
         request.session.clear()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated (inactive admin)",
         )
-    # print(f"Authenticated admin from session: {admin.username}") # Debug
     return admin
 
 # --- UC7: Đăng nhập Admin (Phiên bản đơn giản dùng Session) ---
@@ -85,9 +74,8 @@ async def login_admin_simple_session(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password or inactive account",
         )
-    request.session["admin_id"] = admin.id # Lưu ID vào session
-    request.session["admin_username"] = admin.username # Có thể lưu thêm
-    # print(f"Admin {admin.username} logged in. Session set: {request.session}") # Debug
+    request.session["admin_id"] = admin.id
+    request.session["admin_username"] = admin.username
     return admin
 
 # --- Endpoint Đăng xuất Admin (Xóa session) ---
@@ -95,8 +83,7 @@ async def login_admin_simple_session(
 async def logout_admin_simple_session(request: Request):
     """Endpoint để Admin đăng xuất bằng cách xóa session."""
     admin_username = request.session.get("admin_username", "Unknown admin")
-    request.session.clear() # Xóa toàn bộ session data
-    # print(f"Admin {admin_username} logged out. Session cleared.") # Debug
+    request.session.clear()
     return {"message": f"Admin {admin_username} successfully logged out"}
 
 
@@ -109,7 +96,6 @@ async def read_admin_me_endpoint_session(
     return current_admin
 
 # --- Các API Admin khác (UC8, UC9, UC10) sẽ dùng Depends(get_current_admin_from_session) ---
-# Ví dụ:
 @router.post("/users/", response_model=user_schemas.User, status_code=status.HTTP_201_CREATED)
 async def create_new_user_by_admin_endpoint(
     member_code: str = Form(...),
@@ -129,7 +115,6 @@ async def create_new_user_by_admin_endpoint(
     photo_content = await photo.read()
     print(f"DEBUG CREATE: Kích thước photo_content đọc được: {len(photo_content)} bytes")
     print(f"DEBUG CREATE: Content-Type của ảnh: {photo.content_type}")
-    # Không in toàn bộ photo_content vì nó có thể rất lớn
 
     embedding_list = None
     face_embedding_text = None
@@ -175,12 +160,11 @@ async def create_new_user_by_admin_endpoint(
         phone_number=phone_number,
     )
     
-    # <--- GỌI HAM CRUD VỚI CHUỖI TEXT THAY VÌ LIST ---
     db_user = crud_user.create_user(
         db=db, 
         user=user_data, 
         status="Approved",
-        face_embedding_data=face_embedding_text, # <-- TRUYỀN CHUỖI TEXT ĐÃ CHUYỂN ĐỔI
+        face_embedding_data=face_embedding_text,
     )
     
     return db_user
@@ -223,7 +207,7 @@ async def update_existing_user_by_admin_endpoint(
     email: Optional[str] = Form(None),
     phone_number: Optional[str] = Form(None),
     status_update: Optional[str] = Form(None, pattern="^(Approved|Inactive)$"),
-    photo: Optional[UploadFile] = File(None), # <-- THÊM THAM SỐ NÀY ĐỂ CẬP NHẬT ẢNH
+    photo: Optional[UploadFile] = File(None),
     current_admin: models.AdminUser = Depends(get_current_admin_from_session),
     db: Session = Depends(database.get_db)
 ):
@@ -241,15 +225,14 @@ async def update_existing_user_by_admin_endpoint(
         update_data["email"] = email
     if phone_number is not None: update_data["phone_number"] = phone_number
     
-    # --- LOGIC XỬ LÝ ẢNH MỚI VÀ EMBEDDING (NẾU CÓ) ---
     face_embedding_text_to_update = None
 
-    if photo: # Nếu có ảnh mới được cung cấp
+    if photo:
         photo_content = await photo.read()
         try:
             async with httpx.AsyncClient() as client:
                 ai_response = await client.post(
-                    f"{AI_SERVICE_URL}/face-embeddings/extract", # Gọi endpoint của Backend AI
+                    f"{AI_SERVICE_URL}/face-embeddings/extract",
                     files={"image_file": (photo.filename, photo_content, photo.content_type)}
                 )
                 ai_response.raise_for_status()
@@ -261,7 +244,6 @@ async def update_existing_user_by_admin_endpoint(
                     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
                                         detail="AI service did not return embedding.")
                 
-                # Chuyển đổi list embedding thành chuỗi TEXT
                 face_embedding_text_to_update = ",".join(map(str, embedding_list))
 
         except httpx.HTTPStatusError as e:
@@ -273,17 +255,16 @@ async def update_existing_user_by_admin_endpoint(
         except Exception as e:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
                                 detail=f"Lỗi không xác định khi xử lý ảnh mới: {str(e)}")
-    # --- KẾT THÚC LOGIC XỬ LÝ ẢNH MỚI ---
-
+        
     user_update_schema = user_schemas.UserUpdate(**{k: v for k, v in update_data.items() if v is not None})
     
-    updated_user = db_user # Bắt đầu với user hiện tại
-    if update_data or photo: # Chỉ cập nhật nếu có dữ liệu thay đổi HOẶC CÓ ẢNH MỚI
+    updated_user = db_user
+    if update_data or photo:
         updated_user = crud_user.update_user_profile(
             db, 
             db_user=db_user, 
             user_update=user_update_schema,
-            face_embedding_text=face_embedding_text_to_update, # <-- TRUYỀN EMBEDDING MỚI (nếu có)
+            face_embedding_text=face_embedding_text_to_update,
         )
 
     if status_update and status_update != updated_user.status:
@@ -294,7 +275,7 @@ async def update_existing_user_by_admin_endpoint(
 @router.delete("/users/{user_id}", response_model=user_schemas.User)
 def delete_existing_user_by_admin_endpoint(
     user_id: int,
-    current_admin: models.AdminUser = Depends(get_current_admin_from_session), # <<<< SỬ DỤNG DEPENDENCY MỚI
+    current_admin: models.AdminUser = Depends(get_current_admin_from_session),
     db: Session = Depends(database.get_db)
 ):
     deleted_user = crud_user.delete_user(db, user_id=user_id)
@@ -305,7 +286,7 @@ def delete_existing_user_by_admin_endpoint(
 @router.get("/registration-requests/pending", response_model=List[request_schemas.RegistrationRequest])
 def get_all_pending_requests_endpoint(
     skip: int = 0, limit: int = 100,
-    current_admin: models.AdminUser = Depends(get_current_admin_from_session), # <<<< SỬ DỤNG DEPENDENCY MỚI
+    current_admin: models.AdminUser = Depends(get_current_admin_from_session),
     db: Session = Depends(database.get_db)
 ):
     requests = crud_request.get_pending_registration_requests(db, skip=skip, limit=limit)
@@ -314,7 +295,7 @@ def get_all_pending_requests_endpoint(
 @router.get("/registration-requests/{request_id}", response_model=request_schemas.RegistrationRequest)
 def get_single_request_endpoint(
     request_id: int,
-    current_admin: models.AdminUser = Depends(get_current_admin_from_session), # <<<< SỬ DỤNG DEPENDENCY MỚI
+    current_admin: models.AdminUser = Depends(get_current_admin_from_session),
     db: Session = Depends(database.get_db)
 ):
     db_request = crud_request.get_registration_request_by_id(db, request_id=request_id)
@@ -327,7 +308,7 @@ def get_single_request_endpoint(
 async def process_registration_request_endpoint(
     request_id: int,
     action: request_schemas.RegistrationRequestProcess,
-    current_admin: models.AdminUser = Depends(get_current_admin_from_session), # <<<< SỬ DỤNG DEPENDENCY MỚI
+    current_admin: models.AdminUser = Depends(get_current_admin_from_session),
     db: Session = Depends(database.get_db)
 ):
     db_request = crud_request.get_registration_request_by_id(db, request_id=request_id)
@@ -350,7 +331,7 @@ async def process_registration_request_endpoint(
     
     if error_message:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
-    if not processed_request: # Trường hợp này không nên xảy ra nếu error_message được xử lý đúng
+    if not processed_request:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error processing request.")
         
     return processed_request
@@ -360,12 +341,11 @@ async def process_registration_request_endpoint(
 def get_admin_all_completed_history_endpoint(
     skip: int = 0, limit: int = 100,
     member_code_filter: Optional[str] = None,
-    start_date_filter: Optional[str] = None, # Input là chuỗi "YYYY-MM-DD"
-    end_date_filter: Optional[str] = None,   # Input là chuỗi "YYYY-MM-DD"
+    start_date_filter: Optional[str] = None,
+    end_date_filter: Optional[str] = None,
     current_admin: models.AdminUser = Depends(get_current_admin_from_session),
     db: Session = Depends(database.get_db)
 ):
-    # Khai báo biến datetime để truyền vào hàm CRUD
     final_start_datetime: Optional[datetime] = None
     final_end_datetime: Optional[datetime] = None
 
@@ -397,23 +377,17 @@ def get_admin_all_completed_history_endpoint(
         if user_by_member_code:
             user_id_to_filter = user_by_member_code.id
         else:
-            # Nếu không tìm thấy người dùng với member_code này, trả về danh sách rỗng
             return []
 
-    # Gọi hàm CRUD để lấy lịch sử điểm danh
-    # Giả định crud_attendance.get_admin_all_completed_attendance_history có các tham số này
     history_from_db = crud_attendance.get_admin_all_completed_attendance_history(
         db,
         skip=skip,
         limit=limit,
-        filter_member_code=member_code_filter, # Truyền member_code_filter (CRUD sẽ tự xử lý hoặc bạn sẽ sửa CRUD)
-        # Hoặc nếu CRUD của bạn mong đợi user_id, thì dùng:
-        # user_id=user_id_to_filter,
-        start_date=final_start_datetime, # Truyền datetime objects cho CRUD
-        end_date=final_end_datetime      # Truyền datetime objects cho CRUD
+        filter_member_code=member_code_filter,
+        start_date=final_start_datetime,
+        end_date=final_end_datetime
     )
 
-    # Xử lý và định dạng thời gian sang múi giờ Việt Nam
     formatted_history = []
     for session in history_from_db:
         entry_time_vietnam: Optional[str] = None
@@ -428,16 +402,14 @@ def get_admin_all_completed_history_endpoint(
             entry_time_vietnam = entry_time_vietnam_aware.strftime("%m/%d/%Y, %I:%M:%S %p")
 
         if session.exit_time:
-            # Lặp lại các bước tương tự cho exit_time
             exit_time_utc_aware = session.exit_time.replace(tzinfo=utc)
             exit_time_vietnam_aware = exit_time_utc_aware.astimezone(VIETNAM_TIMEZONE)
             exit_time_vietnam = exit_time_vietnam_aware.strftime("%m/%d/%Y, %I:%M:%S %p")
         
-        # Thêm đối tượng AttendanceSession đã được định dạng vào danh sách
         formatted_history.append(
             attendance_schemas.AttendanceSession(
                 id=session.id,
-                user_id=session.user_id, # Đảm bảo rằng model.AttendanceSession có trường này
+                user_id=session.user_id,
                 entry_time=entry_time_vietnam,
                 exit_time=exit_time_vietnam,
                 duration_minutes=session.duration_minutes

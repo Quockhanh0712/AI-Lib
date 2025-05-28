@@ -14,7 +14,7 @@ import json
 import base64
 import math
 import os
-import uuid # <-- Đảm bảo dòng này có
+import uuid
 
 
 # --- Cấu hình GPU TensorFlow ---
@@ -32,7 +32,6 @@ else:
 
 # --- Cấu hình cơ sở dữ liệu ---
 DATABASE_URL = os.environ.get("DATABASE_URL", "mysql+pymysql://root:password@localhost:3306/default_db") 
-# Giá trị thứ hai là fallback nếu biến môi trường không tồn tại (chỉ dùng khi test cục bộ không qua docker)
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -457,8 +456,6 @@ async def extract_face_embedding_from_upload(
             detail="Không thể giải mã ảnh. Đảm bảo đây là tệp ảnh hợp lệ."
         )
 
-    # Sử dụng hàm extract_embedding đã có của bạn
-    # Hàm này đã bao gồm preprocess_image và kiểm tra 1 khuôn mặt.
     embedding_result_np, facial_area_info, error = extract_embedding(img_bgr)
     print(f"DEBUG AI: embedding_result_np after extract_embedding: {embedding_result_np}")
     if embedding_result_np is not None:
@@ -466,29 +463,20 @@ async def extract_face_embedding_from_upload(
         print(f"DEBUG AI: type of first element: {type(embedding_result_np[0]) if len(embedding_result_np) > 0 else 'N/A'}")
 
     if error:
-        # Nếu có lỗi từ extract_embedding (ví dụ: không tìm thấy mặt, nhiều mặt, lỗi xử lý)
         return {"embedding": None, "photo_path": None, "message": error}
-        # Hoặc bạn có thể raise HTTPException nếu muốn lỗi rõ ràng hơn:
-        # raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
 
 
-    if embedding_result_np is None: # Trường hợp lỗi không có embedding
+    if embedding_result_np is None:
         return {"embedding": None, "photo_path": None, "message": "Không thể trích xuất embedding. Vui lòng kiểm tra lại ảnh."}
-        # Hoặc raise HTTPException:
-        # raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Không thể trích xuất embedding.")
 
 
-    # Lưu ảnh gốc vào thư mục UPLOAD_DIR
     unique_filename = f"{uuid.uuid4()}_{image_file.filename}"
     file_path_on_server = os.path.join(UPLOAD_DIR, unique_filename)
-    cv2.imwrite(file_path_on_server, img_bgr) # Lưu ảnh gốc BGR
-
-    # Trả về embedding (chuyển sang list để JSON hóa) và đường dẫn ảnh
+    cv2.imwrite(file_path_on_server, img_bgr)
     return {
         "embedding": embedding_result_np.tolist(),
         "photo_path": file_path_on_server,
         "message": "Khuôn mặt đã được xử lý và embedding trích xuất thành công."
     }
-
 
 

@@ -6,7 +6,7 @@ from schemas import user as user_schemas # Cần để tạo user khi approve
 from crud import crud_user # Cần để tạo user và kiểm tra trùng lặp
 from typing import List, Optional
 from datetime import datetime
-import os # Để xử lý photo_path sau này
+import os
 
 def create_registration_request(db: Session, request: request_schemas.RegistrationRequestCreate) -> models.RegistrationRequest:
     """Tạo một yêu cầu đăng ký mới."""
@@ -27,7 +27,6 @@ def create_registration_request(db: Session, request: request_schemas.Registrati
         full_name=request.full_name,
         email=request.email,
         phone_number=request.phone_number,
-        photo_path=request.photo_path # Backend sẽ cần xử lý lưu file ảnh từ UploadFile và lấy path thực tế
     )
     db.add(db_request)
     db.commit()
@@ -51,10 +50,8 @@ def process_approve_registration_request(db: Session, db_request: models.Registr
     if db_request.status != 'Pending':
         return None, "Request is not in pending state."
 
-    # Kiểm tra lại member_code và email có bị trùng trong bảng users không
-    # (Phòng trường hợp có request khác được approve trong lúc admin đang xem)
     if crud_user.get_user_by_member_code(db, db_request.requested_member_code):
-        db_request.status = 'Rejected' # Tự động reject nếu code đã tồn tại
+        db_request.status = 'Rejected'
         db_request.processed_by_admin_id = admin_id
         db_request.processing_time = datetime.now()
         db.commit()
@@ -62,14 +59,13 @@ def process_approve_registration_request(db: Session, db_request: models.Registr
         return db_request, f"Member code {db_request.requested_member_code} already exists. Request auto-rejected."
 
     if db_request.email and crud_user.get_user_by_email(db, db_request.email):
-        db_request.status = 'Rejected' # Tự động reject nếu email đã tồn tại
+        db_request.status = 'Rejected'
         db_request.processed_by_admin_id = admin_id
         db_request.processing_time = datetime.now()
         db.commit()
         db.refresh(db_request)
         return db_request, f"Email {db_request.email} already exists. Request auto-rejected."
-
-    # Tạo user mới từ thông tin request
+    
     new_user_schema = user_schemas.UserCreate(
         member_code=db_request.requested_member_code,
         full_name=db_request.full_name,
@@ -78,29 +74,12 @@ def process_approve_registration_request(db: Session, db_request: models.Registr
     )
     created_user = crud_user.create_user(db, user=new_user_schema, status="Approved")
 
-    # --- PHẦN TÍCH HỢP AI SẼ Ở ĐÂY ---
-    # 1. Lấy ảnh từ db_request.photo_path
-    # 2. Gọi DeepFace để trích xuất embedding
-    # 3. Gọi crud_user.create_user_face_embedding(db, user_id=created_user.id, embedding_vector=...)
-    # Nhớ xử lý lỗi nếu không trích xuất được embedding
-    # Nếu lỗi AI, có thể không tạo user, hoặc tạo user nhưng đánh dấu là chưa có embedding
-    # và cập nhật request.status là 'Pending_AI_Error' chẳng hạn.
-    # Tạm thời bỏ qua bước này.
-    # --- KẾT THÚC PHẦN AI ---
-
     # Cập nhật trạng thái của request
     db_request.status = 'Approved'
     db_request.processed_by_admin_id = admin_id
     db_request.processing_time = datetime.now()
     db.commit()
     db.refresh(db_request)
-
-    # (Tùy chọn) Xóa file ảnh tạm từ db_request.photo_path ở đây
-    # try:
-    #     if os.path.exists(db_request.photo_path):
-    #         os.remove(db_request.photo_path)
-    # except OSError as e:
-    #     print(f"Error deleting temp photo {db_request.photo_path}: {e}")
 
     return db_request, None # Thành công
 
@@ -110,7 +89,7 @@ def process_reject_registration_request(db: Session, db_request: models.Registra
     db_request là đối tượng RegistrationRequest đã được lấy từ DB.
     """
     if db_request.status != 'Pending':
-        return None # Chỉ reject được request đang pending
+        return None
 
     db_request.status = 'Rejected'
     db_request.processed_by_admin_id = admin_id

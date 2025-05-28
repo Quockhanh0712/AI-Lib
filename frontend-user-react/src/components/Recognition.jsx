@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom'; // Chỉ cần Link, không cần useNavigate nếu bạn không dùng
 import styles from './Recognition.module.css'; // Import CSS Modules
 
-const API_BASE_URL = process.env.REACT_APP_AI_SERVICE_URL || 'http://localhost:8001';
+const API_BASE_URL = process.env.REACT_APP_AI_SERVICE_URL || 'http://localhost:8000';
 
 const Recognition = () => {
     // Không cần useNavigate nếu bạn không chủ động điều hướng bằng navigate('/path')

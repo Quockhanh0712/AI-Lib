@@ -10,19 +10,17 @@ from .database import Base
 import enum
 from datetime import datetime
 
-# Định nghĩa Enum cho trạng thái người dùng (Giữ nguyên)
 class UserStatus(str, enum.Enum):
     Pending = "Pending"
     Approved = "Approved"
     Rejected = "Rejected"
     Inactive = "Inactive"
 
-# Định nghĩa model cho bảng AdminUser (Giữ nguyên)
 class AdminUser(Base):
     __tablename__ = "admin_users"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String(100), unique=True, nullable=False, index=True)
-    password = Column(String(255), nullable=False) # Đảm bảo tên cột khớp với 'password' trong SQL nếu bạn đã đổi tên nó trong file SQL init, nếu không thì để lại là 'password'
+    password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
     contact_info = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
@@ -30,7 +28,6 @@ class AdminUser(Base):
 
     registration_requests_processed = relationship("RegistrationRequest", back_populates="processor")
 
-# Định nghĩa model cho bảng User (Cập nhật mối quan hệ)
 class User(Base):
     __tablename__ = "users"
 
@@ -44,35 +41,30 @@ class User(Base):
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
     face_embeddings = relationship("FaceEmbedding", back_populates="owner", cascade="all, delete-orphan")
-    # CẬP NHẬT MỐI QUAN HỆ ĐỂ TRỎ ĐẾN AttendanceSession
     attendance_sessions = relationship("AttendanceSession", back_populates="user_session_owner", cascade="all, delete-orphan")
 
-# Định nghĩa model cho bảng FaceEmbedding (Giữ nguyên)
 class FaceEmbedding(Base):
     __tablename__ = "face_embeddings"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True) # Đảm bảo unique=True khớp với SQL
-    embedding = Column(Text, nullable=False) # Đảm bảo là TEXT và NOT NULL nếu như trong SQL bạn định nghĩa là NOT NULL
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    embedding = Column(Text, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
     owner = relationship("User", back_populates="face_embeddings")
 
-# ĐỊNH NGHĨA LẠI MODEL CHO BẢNG ATTENDANCE_SESSIONS
-class AttendanceSession(Base): # <--- Đổi tên class trở lại
-    __tablename__ = "attendance_sessions" # <--- Đổi tên bảng trong DB trở lại
+class AttendanceSession(Base):
+    __tablename__ = "attendance_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False) # user_id là NOT NULL trong SQL
-    entry_time = Column(TIMESTAMP, nullable=False) # <--- Đổi tên cột và kiểu dữ liệu
-    exit_time = Column(TIMESTAMP, nullable=True) # <--- Đổi tên cột và kiểu dữ liệu (NULLABLE)
-    duration_minutes = Column(Integer, nullable=True) # <--- Thêm cột này
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    entry_time = Column(TIMESTAMP, nullable=False)
+    exit_time = Column(TIMESTAMP, nullable=True)
+    duration_minutes = Column(Integer, nullable=True)
 
-    # Đổi tên mối quan hệ để khớp với tên mới
     user_session_owner = relationship("User", back_populates="attendance_sessions")
 
-# Định nghĩa model cho bảng RegistrationRequest (Giữ nguyên)
 class RegistrationRequest(Base):
     __tablename__ = "registration_requests"
 

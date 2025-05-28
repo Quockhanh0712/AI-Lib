@@ -18,6 +18,10 @@
 --
 -- Table structure for table `admin_users`
 --
+CREATE USER 'ai'@'%' IDENTIFIED BY 'huy';
+GRANT SELECT ON default_db.users TO 'ai'@'%';
+GRANT SELECT ON default_db.face_embeddings TO 'ai'@'%';
+FLUSH PRIVILEGES;
 
 DROP TABLE IF EXISTS `admin_users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

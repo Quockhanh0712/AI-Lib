@@ -11,7 +11,6 @@ def create_admin_user(db: Session, admin: admin_schemas.AdminUserCreate) -> mode
     """Tạo admin user mới, băm mật khẩu trước khi lưu."""
     db_admin = models.AdminUser(
         username=admin.username,
-        # ĐÃ SỬA: Băm mật khẩu và lưu vào password_hash
         password=admin.password, 
         full_name=admin.full_name,
         contact_info=admin.contact_info
@@ -27,8 +26,7 @@ def authenticate_admin(db: Session, username: str, password_input: str) -> Optio
     if not admin:
         return None
     
-    # ĐÃ SỬA: Sử dụng pwd_context.verify để so sánh mật khẩu đầu vào với hash đã lưu
-    if not (password_input == admin.password): # <-- SỬA DÒNG NÀY
+    if not (password_input == admin.password):
         return None
         
     if not admin.is_active:

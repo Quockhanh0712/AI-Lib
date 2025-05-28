@@ -38,9 +38,8 @@ def on_startup():
     print("Database tables checked/created successfully.")
 
 # Đăng ký các router
-app.include_router(user_endpoints.router, prefix="/machine", tags=["Machine/User Public"]) # <--- SỬA DÒNG NÀY
-app.include_router(admin_endpoints.router, prefix="/admin", tags=["Admin"]) # Nên có prefix cho admin
-# Bạn có thể cân nhắc đổi tên tags cho rõ ràng hơn, ví dụ "Machine Interaction" hoặc "Public User API"
+app.include_router(user_endpoints.router, prefix="/machine", tags=["Machine/User Public"])
+app.include_router(admin_endpoints.router, prefix="/admin", tags=["Admin"])
 
 @app.get("/")
 async def read_root():

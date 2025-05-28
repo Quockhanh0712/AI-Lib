@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from datetime import datetime
 import pytz
-
 from db import database
 from crud import crud_attendance, crud_user
 from schemas import attendance as attendance_schemas
@@ -15,7 +14,6 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
-# Pydantic Model cho Request Body của Check-out (chỉ cần member_code)
 class CheckoutRequest(BaseModel):
     member_code: str
 
@@ -54,10 +52,10 @@ def get_users_in_library_endpoint(db: Session = Depends(database.get_db)):
         user_owner_data = user_schemas.User.model_validate(user).model_dump(mode='json')
 
         users_in_library_data.append({
-            "id": session_record.id, # Đây là ID của bản ghi attendance_session
+            "id": session_record.id,
             "user_id": session_record.user_id,
-            "entry_time": formatted_entry_time, # Đổi tên key để khớp với schema và data
-            "user_session_owner": user_owner_data # Vẫn giữ tên key này cho tiện ở frontend
+            "entry_time": formatted_entry_time,
+            "user_session_owner": user_owner_data
         })
 
     print("LOG: End of active_attendance_sessions_with_users debug.")

@@ -12,11 +12,10 @@ class RegistrationRequestBase(BaseModel):
 class RegistrationRequestCreate(RegistrationRequestBase):
     pass
 
-class RegistrationRequestProcess(BaseModel): # Dùng khi Admin xử lý yêu cầu
-    status: constr(pattern="^(Approved|Rejected)$") # Chỉ chấp nhận 'Approved' hoặc 'Rejected'
+class RegistrationRequestProcess(BaseModel):
+    status: constr(pattern="^(Approved|Rejected)$")
 
-class RegistrationRequest(RegistrationRequestBase): # Dùng để hiển thị
-    id: int
+class RegistrationRequest(RegistrationRequestBase):
     request_time: datetime
     status: str
     processed_by_admin_id: Optional[int] = None
