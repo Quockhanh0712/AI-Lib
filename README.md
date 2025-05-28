@@ -36,7 +36,7 @@ Giao diện web cho quản trị viên thư viện để quản lý thành viên
 Giao diện cho phép người dùng thực hiện điểm danh vào/ra thông qua camera và nhập mã thành viên.
 
 ### Backend Quản trị viên (FastAPI)
-Cung cấp API bảo mật để thực hiện các chức năng quản trị: quản lý thành viên, truy xuất lịch sử điểm danh. Backend này cũng chịu trách nhiệm tạo tài khoản người dùng và gọi dịch vụ AI để ghi nhận khuôn mặt.
+Cung cấp API bảo mật để thực hiện các chức năng quản trị: quản lý thành viên, truy xuất lịch sử điểm danh. Backend này cũng chịu trách nhiệm tạo tài khoản người dùng và gọi dịch vụ AI để trich xuất khuôn mặt.
 
 ### Dịch vụ AI (FastAPI)
 Dịch vụ backend chuyên xử lý:
@@ -98,7 +98,7 @@ CSDL trung tâm lưu trữ:
 
 
 ## 4. Yêu cầu hệ thống:
- - đã cà đặt docker 
+ - đã cài đặt docker 
  - Kiểm tra bằng lệnh: docker --version docker compose version
 
 
