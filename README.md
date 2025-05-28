@@ -1,10 +1,10 @@
 # Hệ thống điểm danh thư viện thông minh bằng nhận diện khuôn mặt
 
 ## Thành viên nhóm
-Hoàng Ngọc Nam : MSV 23020403
-Trần Quốc Khánh : MSV 23020387
-Nguyễn Văn Huy : MSV 23020379
-Nguyễn Anh Kiệt : MSV 23020383
+- Hoàng Ngọc Nam : MSV 23020403
+- Trần Quốc Khánh : MSV 23020387
+- Nguyễn Văn Huy : MSV 23020379
+- Nguyễn Anh Kiệt : MSV 23020383
 ---
 
 ## Giới thiệu
