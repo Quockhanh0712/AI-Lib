@@ -37,6 +37,18 @@
 
 ## Hướng dẫn sử dụng
 
+### Tải image từ Docker Hub và chạy hệ thống
+
+#### Bước 1: Tải image
+docker pull huy332005/frontend-admin-app:1.0
+docker pull huy332005/frontend-user-react-app:1.0
+docker pull huy332005/backend-api-service:1.0
+docker pull huy332005/backend-ai-service:1.0
+#### Bước 2: Truy cập hệ thống
+- Khởi động hệ thống: docker compose up -d
+- Giao diện Admin: http://localhost:8083
+- Giao diện Người dùng: http://localhost:8082
+
 **Đối với người dùng:**
 - Quét mặt và nhập mã để Check-in.
 - Nhập lại mã để Check-out.
@@ -48,6 +60,7 @@
 - Xem và lọc lịch sử điểm danh.
 - Đăng xuất khi kết thúc phiên làm việc.
 ---
-Chi tiết hệ thống có thể xem trong 'báo cáo hệ thống.pdf'
+- Chi tiết hệ thống có thể xem trong 'báo cáo hệ thống.pdf'
+- Link docker-hub : [https://l.facebook.com/l.php?u=https%3A%2F%2Fhub.docker.com%2Fr%2Fhuy332005%2Fbackend-ai-service%3Ffbclid%3DIwZXh0bgNhZW0CMTAAYnJpZBExbUpsSVpzcjBkVTdaSVozeAEelF1Lqc7F_4ZIvXmGMSTXudxcdeQygNs1p3EHGOS-6cVjCBWSFlF_dr6nfZ4_aem_1_0CcUBfVWQocXZFAZv3fw&h=AT2Fi0q4ivNiHjcPHO9uj0iyNBasRvla8Qu3p76UDeCPu_wZa_GxwSx-t5AyTNJ3SJDQw5GuhpaGATJS8Ao3sCdNEapZC1Iw-S74auZReboomkLczxz9KPDILezxD7jRkHNZOQVJXdoREvxvDijVxQ](https://hub.docker.com/r/huy332005/backend-ai-service?fbclid=IwY2xjawKkFpdleHRuA2FlbQIxMABicmlkETFtSmxJWnNyMGRVN1pJWjN4AR6UXUupzsX_hki9eYYxJNe53Fx15DKA2zWncQcY5L7pxWMIFZIWUX92vqd9ng_aem_1_0CcUBfVWQocXZFAZv3fw)
 
 ---
