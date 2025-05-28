@@ -40,10 +40,10 @@
 ### Tải image từ Docker Hub và chạy hệ thống
 
 #### Bước 1: Tải image
-docker pull huy332005/frontend-admin-app:1.0
-docker pull huy332005/frontend-user-react-app:1.0
-docker pull huy332005/backend-api-service:1.0
-docker pull huy332005/backend-ai-service:1.0
+- docker pull huy332005/frontend-admin-app:1.0
+- docker pull huy332005/frontend-user-react-app:1.0
+- docker pull huy332005/backend-api-service:1.0
+- docker pull huy332005/backend-ai-service:1.0
 #### Bước 2: Truy cập hệ thống
 - Khởi động hệ thống: docker compose up -d
 - Giao diện Admin: http://localhost:8083
