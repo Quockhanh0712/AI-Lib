@@ -111,7 +111,7 @@ CSDL trung tâm lưu trữ:
  - rồi lệnh : docker compose up -d
  - Giao diện Admin: http://localhost:8083
  - Giao diện Người dùng: http://localhost:8082
- ## 6. Link docker-hub : [https://l.facebook.com/l.php?u=https%3A%2F%2Fhub.docker.com%2Fr%2Fhuy332005%2Fbackend-ai-service%3Ffbclid%3DIwZXh0bgNhZW0CMTAAYnJpZBExbUpsSVpzcjBkVTdaSVozeAEelF1Lqc7F_4ZIvXmGMSTXudxcdeQygNs1p3EHGOS-6cVjCBWSFlF_dr6nfZ4_aem_1_0CcUBfVWQocXZFAZv3fw&h=AT2Fi0q4ivNiHjcPHO9uj0iyNBasRvla8Qu3p76UDeCPu_wZa_GxwSx-t5AyTNJ3SJDQw5GuhpaGATJS8Ao3sCdNEapZC1Iw-S74auZReboomkLczxz9KPDILezxD7jRkHNZOQVJXdoREvxvDijVxQ](https://hub.docker.com/r/huy332005/backend-ai-service?fbclid=IwY2xjawKkFpdleHRuA2FlbQIxMABicmlkETFtSmxJWnNyMGRVN1pJWjN4AR6UXUupzsX_hki9eYYxJNe53Fx15DKA2zWncQcY5L7pxWMIFZIWUX92vqd9ng_aem_1_0CcUBfVWQocXZFAZv3fw)
+## 6. Link docker-hub : https://hub.docker.com/repositories/huy332005
 
 ## 7. Kết quả kỳ vọng
  - Người dùng có thể nhanh chóng nhận diện và đăng nhập từ webcam.
