@@ -106,9 +106,6 @@ CSDL trung tâm lưu trữ:
 @app.post('/update-exit-time')
 #### Cập nhật thời gian rời thư viện cho thành viên.
 
-@app.post('/add-face')
-#### Ghi nhận và lưu trữ dữ liệu khuôn mặt mới vào hệ thống.
-
 @router.post("/login", response_model=admin_schemas.AdminUser)
 #### Đăng nhập quản trị viên vào hệ thống.
 
