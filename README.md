@@ -114,3 +114,5 @@ CSDL trung tâm lưu trữ:
  - Giao diện admin trực quan, dễ quản lý.
  - Backend phản hồi nhanh, hỗ trợ tải lớn và dễ mở rộng.
  - Dễ dàng deploy, scale khi cần thiết.
+---
+### Chi tiết hệ thống xem tại 'báo cáo hệ thống.pdf'
