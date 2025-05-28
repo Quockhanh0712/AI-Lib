@@ -88,6 +88,7 @@ CSDL trung tâm lưu trữ:
 #### UC7: Xem lịch sử điểm danh (tổng thể)
 - Xem danh sách tất cả phiên điểm danh đã hoàn tất.
 - Lọc theo mã thành viên, khoảng thời gian, v.v.
+- @router.post("/login", response_model=admin_schemas.AdminUser)
 
 #### UC8: Xem lịch sử điểm danh của một thành viên cụ thể
 - Chọn một thành viên và xem lịch sử điểm danh riêng của họ.
