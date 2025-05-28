@@ -49,6 +49,7 @@ CSDL trung tâm lưu trữ:
 - `users`: Thông tin thành viên thư viện
 - `face_embeddings`: Embedding khuôn mặt gắn với thành viên
 - `attendance_sessions`: Phiên điểm danh
+- 'registration_requests`: yêu cầu đăng kí của người dùng
 
 ---
 
