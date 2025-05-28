@@ -94,15 +94,40 @@ CSDL trung tâm lưu trữ:
 
 #### UC9: Đăng xuất quản trị viên
 - Đăng xuất khỏi giao diện quản trị.
+  
+## 4. Danh sách API
+@app.post('/process-frame', response_model=FaceRecognitionResponse)
+#### Xử lý khung hình để nhận diện khuôn mặt từ camera.
+
+@app.post('/confirm-attendance')
+#### Xác nhận điểm danh thành công sau khi nhận diện khuôn mặt và mã thành viên.
+
+@app.post('/update-exit-time')
+#### Cập nhật thời gian rời thư viện cho thành viên.
+
+@app.post('/add-face')
+#### Ghi nhận và lưu trữ dữ liệu khuôn mặt mới vào hệ thống.
+
+@router.post("/login", response_model=admin_schemas.AdminUser)
+#### Đăng nhập quản trị viên vào hệ thống.
+
+@router.post("/logout")
+#### Đăng xuất quản trị viên khỏi hệ thống.
+
+@router.post("/users/", response_model=user_schemas.User, status_code=status.HTTP_201_CREATED)
+#### Tạo mới tài khoản thành viên thư viện (bởi quản trị viên).
+
+@router.get("/attendance-history/completed", response_model=List[attendance_schemas.AttendanceSession])
+#### Trả về tất cả các phiên điểm danh đã hoàn tất.
 
 
 
-## 4. Yêu cầu hệ thống:
+## 5. Yêu cầu hệ thống:
  - đã cài đặt docker 
  - Kiểm tra bằng lệnh: docker --version docker compose version
 
 
-## 5. Cách sử dụng: 
+## 6. Cách sử dụng: 
  - gõ lệnh : docker pull 
     + docker pull huy332005/frontend-admin-app:1.0
     + docker pull huy332005/frontend-user-react-app:1.0
@@ -111,9 +136,9 @@ CSDL trung tâm lưu trữ:
  - rồi lệnh : docker compose up -d
  - Giao diện Admin: http://localhost:8083
  - Giao diện Người dùng: http://localhost:8082
-## 6. Link docker-hub : https://hub.docker.com/repositories/huy332005
+## 7. Link docker-hub : https://hub.docker.com/repositories/huy332005
 
-## 7. Kết quả kỳ vọng
+## 8. Kết quả kỳ vọng
  - Người dùng có thể nhanh chóng nhận diện và đăng nhập từ webcam.
  - Giao diện admin trực quan, dễ quản lý.
  - Backend phản hồi nhanh, hỗ trợ tải lớn và dễ mở rộng.
